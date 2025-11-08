@@ -1,7 +1,7 @@
 // App.jsx
 import React, { useEffect, useState } from "react";
 
-const API = "https://webtomax.vercel.app/";
+const API = "http://localhost:8000";
 
 // Компонент входа по ID
 function LoginForm({ onLogin }) {
@@ -1108,3 +1108,4 @@ export default function App() {
   );
 
 }
+
