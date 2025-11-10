@@ -1,6 +1,31 @@
+/* index.css */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-html,body,#root{height:100%}
-body{font-family: Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;}
+html, body, #root {
+  height: 100%;
+  background: #0f172a;
+}
+
+body {
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+  color: #f1f5f9;
+}
+
+/* Скрыть scrollbar для горизонтальной навигации */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Плавные переходы */
+* {
+  transition-property: color, background-color, border-color, transform;
+  transition-duration: 200ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
