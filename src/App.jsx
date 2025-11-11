@@ -1,7 +1,7 @@
-// App.jsx
+// App.jsx - полная версия с канбан-доской
 import React, { useEffect, useState } from "react";
 
-const API = "https://servicebotformax-iwrawww.amvera.io";
+const API = "http://localhost:8000";
 
 // Компонент входа по ID
 function LoginForm({ onLogin }) {
@@ -960,7 +960,648 @@ function DailyAnalysis({ tasks }) {
   );
 }
 
-// Улучшенное модальное окно
+// КАНБАН ДОСКА - ПОЛНОСТЬЮ ПЕРЕПИСАННАЯ ВЕРСИЯ
+function KanbanBoard({ currentUser }) {
+  const [projects, setProjects] = useState([]);
+  const [selectedProjectId, setSelectedProjectId] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [showCreateProject, setShowCreateProject] = useState(false);
+  const [showCreateCard, setShowCreateCard] = useState(false);
+  const [selectedColumn, setSelectedColumn] = useState(null);
+  const [draggedCard, setDraggedCard] = useState(null);
+
+  const selectedProject = projects.find(p => p.id === selectedProjectId) || projects[0];
+
+  useEffect(() => {
+    loadProjects();
+  }, [currentUser]);
+
+  const loadProjects = async () => {
+    if (!currentUser) return;
+    
+    setLoading(true);
+    try {
+      console.log("Loading projects for user:", currentUser.id);
+      const response = await fetch(`${API}/kanban/projects?external_id=${currentUser.id}`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log("Loaded projects:", data);
+      
+      const projectsData = data.projects || [];
+      setProjects(projectsData);
+      
+      if (projectsData.length > 0 && !selectedProjectId) {
+        setSelectedProjectId(projectsData[0].id);
+      }
+    } catch (error) {
+      console.error("Error loading projects:", error);
+      alert("Ошибка при загрузке проектов");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const createProject = async (title, description, color) => {
+    try {
+      const response = await fetch(`${API}/kanban/projects?external_id=${currentUser.id}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title,
+          description,
+          color
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || "Failed to create project");
+      }
+
+      const result = await response.json();
+      console.log("Project created successfully:", result);
+      
+      setShowCreateProject(false);
+      // Полностью перезагружаем проекты
+      await loadProjects();
+      
+    } catch (error) {
+      console.error("Error creating project:", error);
+      alert(`Ошибка при создании проекта: ${error.message}`);
+    }
+  };
+
+  const createCard = async (columnId, title, description, priority, estimatedMinutes, tags) => {
+    try {
+      console.log("Creating card with data:", {
+        columnId, title, description, priority, estimatedMinutes, tags
+      });
+
+      const response = await fetch(`${API}/kanban/columns/${columnId}/cards?external_id=${currentUser.id}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title,
+          description: description || "",
+          priority: parseInt(priority),
+          estimated_minutes: parseInt(estimatedMinutes) || 0,
+          tags: tags ? tags.split(',').map(t => t.trim()).filter(t => t) : []
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Server error:", errorData);
+        throw new Error(errorData.detail || "Failed to create card");
+      }
+
+      const result = await response.json();
+      console.log("Card created successfully:", result);
+      
+      setShowCreateCard(false);
+      // Полностью перезагружаем проекты
+      await loadProjects();
+      
+    } catch (error) {
+      console.error("Error creating card:", error);
+      alert(`Ошибка при создании карточки: ${error.message}`);
+    }
+  };
+
+  const updateCardPosition = async (cardId, newColumnId, newPosition) => {
+    try {
+      const response = await fetch(`${API}/kanban/cards/${cardId}?external_id=${currentUser.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          column_id: newColumnId,
+          position: newPosition
+        }),
+      });
+
+      if (!response.ok) {
+        console.error("Error updating card position");
+        return false;
+      }
+      
+      // Полностью перезагружаем проекты после успешного перемещения
+      await loadProjects();
+      return true;
+      
+    } catch (error) {
+      console.error("Error updating card position:", error);
+      return false;
+    }
+  };
+
+  const deleteCard = async (cardId) => {
+    try {
+      const response = await fetch(`${API}/kanban/cards/${cardId}?external_id=${currentUser.id}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete card");
+      }
+
+      // Полностью перезагружаем проекты
+      await loadProjects();
+      
+    } catch (error) {
+      console.error("Error deleting card:", error);
+      alert(`Ошибка при удалении карточки: ${error.message}`);
+    }
+  };
+
+  const deleteProject = async (projectId) => {
+    try {
+      const response = await fetch(`${API}/kanban/projects/${projectId}?external_id=${currentUser.id}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete project");
+      }
+
+      // Полностью перезагружаем проекты
+      await loadProjects();
+      
+    } catch (error) {
+      console.error("Error deleting project:", error);
+      alert(`Ошибка при удалении проекта: ${error.message}`);
+    }
+  };
+
+  const handleDragStart = (e, card, column) => {
+    setDraggedCard({ ...card, sourceColumnId: column.id });
+    e.dataTransfer.setData('text/plain', '');
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = async (e, targetColumn) => {
+    e.preventDefault();
+    
+    if (draggedCard && draggedCard.sourceColumnId !== targetColumn.id) {
+      // Calculate new position (add to the end of the target column)
+      const targetColumnCards = targetColumn.cards || [];
+      const newPosition = targetColumnCards.length > 0 
+        ? Math.max(...targetColumnCards.map(c => c.position)) + 1 
+        : 0;
+      
+      await updateCardPosition(draggedCard.id, targetColumn.id, newPosition);
+    }
+    
+    setDraggedCard(null);
+  };
+
+  const getPriorityColor = (priority) => {
+    switch(priority) {
+      case 1: return 'border-l-green-500';
+      case 2: return 'border-l-blue-500';
+      case 3: return 'border-l-yellow-500';
+      case 4: return 'border-l-orange-500';
+      case 5: return 'border-l-red-500';
+      default: return 'border-l-gray-500';
+    }
+  };
+
+  const getPriorityLabel = (priority) => {
+    switch(priority) {
+      case 1: return '🟢 Низкий';
+      case 2: return '🔵 Средний';
+      case 3: return '🟡 Высокий';
+      case 4: return '🟠 Критичный';
+      case 5: return '🔴 Срочный';
+      default: return '⚪ Без приоритета';
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center py-12">
+        <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+        <span className="ml-3 text-white">Загрузка канбан-доски...</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Заголовок и управление проектами */}
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+        <div>
+          <h2 className="text-xl font-bold text-white">Канбан доска</h2>
+          <p className="text-slate-300 text-sm mt-1">
+            Управляйте задачами визуально
+          </p>
+        </div>
+        <div className="flex gap-3">
+          {projects.length > 0 && (
+            <select
+              value={selectedProjectId || ''}
+              onChange={(e) => setSelectedProjectId(parseInt(e.target.value))}
+              className="px-4 py-2 bg-slate-700 border border-slate-500 rounded-xl text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              {projects.map(project => (
+                <option key={project.id} value={project.id}>
+                  {project.title}
+                </option>
+              ))}
+            </select>
+          )}
+          <button 
+            onClick={() => setShowCreateProject(true)}
+            className="px-6 py-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-xl hover:from-blue-600 hover:to-purple-600 transition-all duration-300 transform hover:scale-105 shadow font-semibold border border-blue-400/30"
+          >
+            Новый проект
+          </button>
+        </div>
+      </div>
+
+      {projects.length === 0 ? (
+        <div className="text-center py-12">
+          <div className="w-24 h-24 bg-slate-700 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-slate-500">
+            <svg className="w-12 h-12 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
+            </svg>
+          </div>
+          <h3 className="text-lg font-semibold text-white mb-2">Нет проектов</h3>
+          <p className="text-slate-300 mb-4">Создайте свой первый проект для начала работы</p>
+          <button 
+            onClick={() => setShowCreateProject(true)}
+            className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-xl hover:from-blue-600 hover:to-purple-600 transition-all duration-300 transform hover:scale-105 shadow font-semibold border border-blue-400/30"
+          >
+            Создать проект
+          </button>
+        </div>
+      ) : selectedProject ? (
+        <div className="space-y-4">
+          {/* Информация о проекте */}
+          <div className="flex justify-between items-center">
+            <div>
+              <h3 className="text-lg font-bold text-white">{selectedProject.title}</h3>
+              {selectedProject.description && (
+                <p className="text-slate-300 text-sm mt-1">{selectedProject.description}</p>
+              )}
+            </div>
+            <button
+              onClick={() => {
+                if (confirm(`Удалить проект "${selectedProject.title}"?`)) {
+                  deleteProject(selectedProject.id);
+                }
+              }}
+              className="px-4 py-2 bg-red-500/20 text-red-300 border border-red-500/30 rounded-xl hover:bg-red-500/30 transition-all duration-300"
+            >
+              Удалить проект
+            </button>
+          </div>
+
+          {/* Канбан доска */}
+          <div className="flex space-x-4 overflow-x-auto pb-4 scrollbar-hide">
+            {selectedProject.columns.map(column => (
+              <div 
+                key={column.id}
+                className="flex-shrink-0 w-80 bg-slate-700 rounded-xl border border-slate-500"
+                onDragOver={handleDragOver}
+                onDrop={(e) => handleDrop(e, column)}
+              >
+                {/* Заголовок колонки */}
+                <div 
+                  className="p-4 rounded-t-xl border-b border-slate-500"
+                  style={{ backgroundColor: column.color + '20' }}
+                >
+                  <div className="flex justify-between items-center">
+                    <h3 className="font-semibold text-white" style={{ color: column.color }}>
+                      {column.title}
+                    </h3>
+                    <span className="text-slate-300 text-sm bg-slate-600 px-2 py-1 rounded">
+                      {column.cards.length}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Карточки в колонке */}
+                <div className="p-3 space-y-3 min-h-96 max-h-96 overflow-y-auto">
+                  {column.cards.map(card => (
+                    <div
+                      key={card.id}
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, card, column)}
+                      className={`bg-slate-600 rounded-lg p-3 border-l-4 cursor-move transition-all duration-300 transform hover:scale-105 hover:shadow-lg ${getPriorityColor(card.priority)}`}
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <h4 className="font-medium text-white flex-1">{card.title}</h4>
+                        <button
+                          onClick={() => {
+                            if (confirm(`Удалить карточку "${card.title}"?`)) {
+                              deleteCard(card.id);
+                            }
+                          }}
+                          className="text-slate-400 hover:text-red-400 transition-colors ml-2"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
+                      
+                      {card.description && (
+                        <p className="text-slate-300 text-sm mb-2">{card.description}</p>
+                      )}
+                      
+                      <div className="flex flex-wrap gap-1 mb-2">
+                        {card.tags.map((tag, index) => (
+                          <span 
+                            key={index}
+                            className="px-2 py-1 bg-blue-500/20 text-blue-300 rounded text-xs"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                      
+                      <div className="flex justify-between items-center text-xs text-slate-400">
+                        {card.estimated_minutes > 0 && (
+                          <span>⏱ {card.estimated_minutes}м</span>
+                        )}
+                        <span>{getPriorityLabel(card.priority)}</span>
+                      </div>
+                    </div>
+                  ))}
+                  
+                  {/* Кнопка добавления карточки */}
+                  <button
+                    onClick={() => {
+                      setSelectedColumn(column);
+                      setShowCreateCard(true);
+                    }}
+                    className="w-full p-3 border-2 border-dashed border-slate-500 rounded-lg text-slate-400 hover:text-white hover:border-slate-400 transition-all duration-300 transform hover:scale-105 text-center"
+                  >
+                    + Добавить карточку
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {/* Модальное окно создания проекта */}
+      {showCreateProject && (
+        <CreateProjectModal
+          onCreate={createProject}
+          onClose={() => setShowCreateProject(false)}
+        />
+      )}
+
+      {/* Модальное окно создания карточки */}
+      {showCreateCard && selectedColumn && (
+        <CreateCardModal
+          column={selectedColumn}
+          onCreate={createCard}
+          onClose={() => {
+            setShowCreateCard(false);
+            setSelectedColumn(null);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+// Модальное окно создания проекта
+function CreateProjectModal({ onCreate, onClose }) {
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [color, setColor] = useState("#3b82f6");
+
+  const colors = [
+    "#3b82f6", "#ef4444", "#10b981", "#f59e0b", 
+    "#8b5cf6", "#ec4899", "#06b6d4", "#84cc16"
+  ];
+
+  const handleSubmit = () => {
+    if (title.trim()) {
+      onCreate(title, description, color);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
+      <div className="bg-slate-800 rounded-2xl p-6 w-full max-w-md border border-slate-600 shadow-xl">
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="text-lg font-bold text-white">Новый проект</h3>
+          <button
+            onClick={onClose}
+            className="text-slate-400 hover:text-white transition-colors text-2xl transform hover:scale-110"
+          >
+            ×
+          </button>
+        </div>
+        
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-2">
+              Название проекта
+            </label>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="w-full p-3 bg-slate-700 border border-slate-500 rounded-xl text-white placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Введите название проекта"
+              autoFocus
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-2">
+              Описание (необязательно)
+            </label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="w-full p-3 bg-slate-700 border border-slate-500 rounded-xl text-white placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Описание проекта"
+              rows="3"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-2">
+              Цвет проекта
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {colors.map((colorOption) => (
+                <button
+                  key={colorOption}
+                  onClick={() => setColor(colorOption)}
+                  className={`w-8 h-8 rounded-full border-2 transition-transform ${
+                    color === colorOption ? 'border-white scale-110' : 'border-slate-500'
+                  }`}
+                  style={{ backgroundColor: colorOption }}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex gap-3 mt-6">
+          <button
+            onClick={handleSubmit}
+            disabled={!title.trim()}
+            className="flex-1 bg-gradient-to-r from-blue-500 to-purple-500 text-white py-3 rounded-xl hover:from-blue-600 hover:to-purple-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105 font-semibold"
+          >
+            Создать проект
+          </button>
+          <button
+            onClick={onClose}
+            className="px-6 py-3 bg-slate-700 border border-slate-500 text-white rounded-xl hover:bg-slate-600 transition-all duration-300"
+          >
+            Отмена
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Модальное окно создания карточки
+function CreateCardModal({ column, onCreate, onClose }) {
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [priority, setPriority] = useState("3");
+  const [estimatedMinutes, setEstimatedMinutes] = useState("30");
+  const [tags, setTags] = useState("");
+
+  const handleSubmit = () => {
+    if (title.trim()) {
+      onCreate(column.id, title, description, priority, estimatedMinutes, tags);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
+      <div className="bg-slate-800 rounded-2xl p-6 w-full max-w-md border border-slate-600 shadow-xl">
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="text-lg font-bold text-white">Новая карточка</h3>
+          <button
+            onClick={onClose}
+            className="text-slate-400 hover:text-white transition-colors text-2xl transform hover:scale-110"
+          >
+            ×
+          </button>
+        </div>
+        
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-2">
+              Название карточки
+            </label>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="w-full p-3 bg-slate-700 border border-slate-500 rounded-xl text-white placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Что нужно сделать?"
+              autoFocus
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-2">
+              Описание (необязательно)
+            </label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="w-full p-3 bg-slate-700 border border-slate-500 rounded-xl text-white placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Подробное описание задачи"
+              rows="3"
+            />
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">
+                Приоритет
+              </label>
+              <select
+                value={priority}
+                onChange={(e) => setPriority(e.target.value)}
+                className="w-full p-3 bg-slate-700 border border-slate-500 rounded-xl text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="1">🟢 Низкий</option>
+                <option value="2">🔵 Средний</option>
+                <option value="3">🟡 Высокий</option>
+                <option value="4">🟠 Критичный</option>
+                <option value="5">🔴 Срочный</option>
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">
+                Время (минут)
+              </label>
+              <input
+                type="number"
+                value={estimatedMinutes}
+                onChange={(e) => setEstimatedMinutes(e.target.value)}
+                className="w-full p-3 bg-slate-700 border border-slate-500 rounded-xl text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                min="0"
+                max="480"
+              />
+            </div>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-2">
+              Теги (через запятую)
+            </label>
+            <input
+              type="text"
+              value={tags}
+              onChange={(e) => setTags(e.target.value)}
+              className="w-full p-3 bg-slate-700 border border-slate-500 rounded-xl text-white placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="дизайн, разработка, тестирование"
+            />
+          </div>
+        </div>
+
+        <div className="flex gap-3 mt-6">
+          <button
+            onClick={handleSubmit}
+            disabled={!title.trim()}
+            className="flex-1 bg-gradient-to-r from-blue-500 to-purple-500 text-white py-3 rounded-xl hover:from-blue-600 hover:to-purple-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105 font-semibold"
+          >
+            Создать карточку
+          </button>
+          <button
+            onClick={onClose}
+            className="px-6 py-3 bg-slate-700 border border-slate-500 text-white rounded-xl hover:bg-slate-600 transition-all duration-300"
+          >
+            Отмена
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Улучшенное модальное окно добавления задачи
 function AddTaskModal({ onAdd, onClose }) {
   const [title, setTitle] = useState("");
   const [minutes, setMinutes] = useState(25);
@@ -1171,7 +1812,8 @@ export default function App() {
         { id: 'calendar', label: 'Календарь' },
         { id: 'pomodoro', label: 'Фокус' },
         { id: 'profile', label: 'Профиль' },
-        { id: 'analysis', label: 'Анализ' }
+        { id: 'analysis', label: 'Анализ' },
+        { id: 'kanban', label: 'Канбан' }
       ].map(tab => (
         <button
           key={tab.id}
@@ -1264,6 +1906,9 @@ export default function App() {
               {activeTab === 'analysis' && (
                 <DailyAnalysis tasks={tasks} />
               )}
+              {activeTab === 'kanban' && (
+                <KanbanBoard currentUser={currentUser} />
+              )}
             </div>
           )}
         </main>
@@ -1278,5 +1923,4 @@ export default function App() {
       </div>
     </div>
   );
-
 }
