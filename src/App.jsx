@@ -1,7 +1,7 @@
-// App.jsx - полная версия с канбан-доской
+// App.jsx - ПОЛНАЯ АДАПТИВНАЯ ВЕРСИЯ ДЛЯ МОБИЛЬНЫХ И ПК
 import React, { useEffect, useState } from "react";
 
-const API = "https://servicebotformax-iwrawww.amvera.io";
+const API = "http://localhost:8000";
 
 // Компонент входа по ID
 function LoginForm({ onLogin }) {
@@ -34,20 +34,20 @@ function LoginForm({ onLogin }) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-800 flex items-center justify-center p-4">
-      <div className="bg-slate-800 rounded-2xl p-8 shadow-2xl border border-slate-600 w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center shadow-lg mx-auto mb-4">
-            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div className="bg-slate-800 rounded-2xl p-6 sm:p-8 shadow-2xl border border-slate-600 w-full max-w-md mx-4">
+        <div className="text-center mb-6 sm:mb-8">
+          <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center shadow-lg mx-auto mb-3 sm:mb-4">
+            <svg className="w-6 h-6 sm:w-8 sm:h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold text-white mb-2">TaskFlow Pro</h1>
-          <p className="text-slate-300">Вход по ID пользователя</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-white mb-2">TaskFlow Pro</h1>
+          <p className="text-slate-300 text-sm">Вход по ID пользователя</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-3">
+            <label className="block text-sm font-medium text-slate-300 mb-2 sm:mb-3">
               Ваш ID из MAX
             </label>
             <div className="relative">
@@ -55,7 +55,7 @@ function LoginForm({ onLogin }) {
                 type="text"
                 value={maxUserId}
                 onChange={(e) => setMaxUserId(e.target.value.replace(/\D/g, ''))}
-                className="w-full p-4 bg-slate-700 border border-slate-500 rounded-xl text-white placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                className="w-full p-3 sm:p-4 bg-slate-700 border border-slate-500 rounded-xl text-white placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-base"
                 placeholder="Введите цифровой ID"
                 required
               />
@@ -68,9 +68,9 @@ function LoginForm({ onLogin }) {
           </div>
 
           {error && (
-            <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4">
+            <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 sm:p-4">
               <div className="flex items-center space-x-2 text-red-300">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <span className="text-sm">{error}</span>
@@ -81,11 +81,11 @@ function LoginForm({ onLogin }) {
           <button
             type="submit"
             disabled={loading || !maxUserId.trim()}
-            className="w-full bg-gradient-to-r from-blue-500 to-purple-500 text-white py-4 rounded-xl hover:from-blue-600 hover:to-purple-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105 font-semibold shadow-lg border border-blue-400/30"
+            className="w-full bg-gradient-to-r from-blue-500 to-purple-500 text-white py-3 sm:py-4 rounded-xl hover:from-blue-600 hover:to-purple-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105 font-semibold shadow-lg border border-blue-400/30 text-base min-h-[44px]"
           >
             {loading ? (
               <div className="flex items-center justify-center space-x-2">
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                 <span>Подключение...</span>
               </div>
             ) : (
@@ -98,10 +98,320 @@ function LoginForm({ onLogin }) {
   );
 }
 
-// Улучшенный компонент списка задач
-function TaskList({ tasks, onComplete, onAddTask, currentUser }) {
+// АДАПТИВНАЯ НАВИГАЦИЯ
+function MobileNavigation({ activeTab, setActiveTab }) {
+  const [showMenu, setShowMenu] = useState(false);
+
+  const tabs = [
+    { id: 'tasks', label: '📝 Задачи', icon: '📝' },
+    { id: 'calendar', label: '📅 Календарь', icon: '📅' },
+    { id: 'pomodoro', label: '⏱️ Фокус', icon: '⏱️' },
+    { id: 'profile', label: '👤 Профиль', icon: '👤' },
+    { id: 'analysis', label: '📊 Анализ', icon: '📊' },
+    { id: 'kanban', label: '📋 Канбан', icon: '📋' }
+  ];
+
+  return (
+    <>
+      {/* Мобильное меню (бургер) */}
+      <div className="lg:hidden">
+        <button
+          onClick={() => setShowMenu(!showMenu)}
+          className="w-full bg-slate-700 border border-slate-500 rounded-xl p-4 text-white flex items-center justify-between mb-4 min-h-[44px]"
+        >
+          <span className="font-semibold">
+            {tabs.find(tab => tab.id === activeTab)?.label}
+          </span>
+          <svg className="w-5 h-5 transform transition-transform" style={{ transform: showMenu ? 'rotate(180deg)' : 'none' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+
+        {showMenu && (
+          <div className="bg-slate-700 rounded-xl border border-slate-500 p-2 mb-6 space-y-1">
+            {tabs.map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => {
+                  setActiveTab(tab.id);
+                  setShowMenu(false);
+                }}
+                className={`w-full text-left p-3 rounded-lg transition-all duration-200 min-h-[44px] flex items-center ${
+                  activeTab === tab.id
+                    ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white'
+                    : 'text-slate-300 hover:bg-slate-600'
+                }`}
+              >
+                <span className="mr-2">{tab.icon}</span>
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Десктопная навигация */}
+      <div className="hidden lg:flex overflow-x-auto space-x-1 bg-slate-700 p-1 rounded-xl border border-slate-500 mb-6 scrollbar-hide">
+        {tabs.map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`flex-1 py-3 px-4 rounded-lg text-sm font-medium transition-all duration-300 transform hover:scale-105 whitespace-nowrap min-w-0 min-h-[44px] ${
+              activeTab === tab.id 
+                ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow border border-blue-400/30' 
+                : 'text-slate-300 hover:text-white hover:bg-slate-600'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+    </>
+  );
+}
+
+// АДАПТИВНАЯ ПАНЕЛЬ ПОДЗАДАЧ
+function SubtasksPanel({ task, onClose, onAddSubtask, onCompleteSubtask, onRefresh }) {
+  const [subtasks, setSubtasks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showAddSubtask, setShowAddSubtask] = useState(false);
+
+  useEffect(() => {
+    loadSubtasks();
+  }, [task]);
+
+  const canAddSubtasks = task && task.status !== 'done' && !task.parent_id;
+
+  const loadSubtasks = async () => {
+    if (!task) return;
+    
+    setLoading(true);
+    try {
+      const response = await fetch(`${API}/tasks/${task.id}/subtasks?external_id=${task.user_id || task.external_id}`);
+      if (response.ok) {
+        const data = await response.json();
+        setSubtasks(data.subtasks || []);
+      }
+    } catch (error) {
+      console.error("Error loading subtasks:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddSubtask = async (title, minutes, difficulty) => {
+    if (!canAddSubtasks) {
+      alert("Нельзя добавлять подзадачи к завершенной задаче или к другой подзадаче");
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API}/tasks/${task.id}/subtasks?external_id=${task.user_id || task.external_id}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title,
+          estimated_minutes: minutes,
+          difficulty
+        }),
+      });
+
+      if (response.ok) {
+        await loadSubtasks();
+        setShowAddSubtask(false);
+        if (onRefresh) onRefresh();
+      } else {
+        const errorData = await response.json();
+        alert(`Ошибка: ${errorData.detail || 'Неизвестная ошибка'}`);
+      }
+    } catch (error) {
+      console.error("Error creating subtask:", error);
+      alert("Ошибка при создании подзадачи");
+    }
+  };
+
+  const handleCompleteSubtask = async (subtaskId) => {
+    try {
+      const response = await fetch(`${API}/tasks/${task.id}/subtasks/${subtaskId}/complete?external_id=${task.user_id || task.external_id}`, {
+        method: "POST",
+      });
+
+      if (response.ok) {
+        await loadSubtasks();
+        if (onRefresh) onRefresh();
+      }
+    } catch (error) {
+      console.error("Error completing subtask:", error);
+    }
+  };
+
+  const handleCompleteAll = async () => {
+    try {
+      const response = await fetch(`${API}/tasks/complete?external_id=${task.user_id || task.external_id}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          task_id: task.id
+        }),
+      });
+
+      if (response.ok) {
+        onClose();
+        if (onRefresh) onRefresh();
+      }
+    } catch (error) {
+      console.error("Error completing parent task:", error);
+    }
+  };
+
+  const completedSubtasks = subtasks.filter(st => st.status === 'done').length;
+  const totalSubtasks = subtasks.length;
+  const progress = totalSubtasks > 0 ? Math.round((completedSubtasks / totalSubtasks) * 100) : 0;
+
+  return (
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-3 sm:p-4 z-50">
+      <div className="bg-slate-800 rounded-2xl p-4 sm:p-6 w-full max-w-md border border-slate-600 shadow-xl max-h-[90vh] overflow-y-auto mx-2">
+        <div className="flex justify-between items-center mb-4 sm:mb-6">
+          <div className="min-w-0 flex-1">
+            <h3 className="text-lg font-bold text-white">Подзадачи</h3>
+            <p className="text-slate-300 text-sm mt-1 truncate">{task.title}</p>
+            {!canAddSubtasks && (
+              <p className="text-orange-300 text-xs mt-1">
+                {task.status === 'done' ? 'Задача завершена' : 'Это подзадача'} - добавление подзадач недоступно
+              </p>
+            )}
+          </div>
+          <button
+            onClick={onClose}
+            className="text-slate-400 hover:text-white transition-colors text-2xl transform hover:scale-110 min-h-[44px] min-w-[44px] flex items-center justify-center ml-2"
+          >
+            ×
+          </button>
+        </div>
+
+        {/* Прогресс */}
+        <div className="bg-slate-700 rounded-xl p-3 sm:p-4 mb-4 border border-slate-500">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-slate-300 text-sm">Прогресс:</span>
+            <span className="text-blue-400 font-semibold">{progress}%</span>
+          </div>
+          <div className="w-full bg-slate-600 rounded-full h-2">
+            <div 
+              className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-500"
+              style={{ width: `${progress}%` }}
+            ></div>
+          </div>
+          <div className="text-center text-slate-300 text-sm mt-2">
+            {completedSubtasks} из {totalSubtasks} завершено
+          </div>
+        </div>
+
+        {/* Список подзадач */}
+        {loading ? (
+          <div className="flex justify-center items-center py-6 sm:py-8">
+            <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        ) : subtasks.length === 0 ? (
+          <div className="text-center py-6 sm:py-8 text-slate-400">
+            <svg className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-3 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <p className="text-sm">Нет подзадач</p>
+          </div>
+        ) : (
+          <div className="space-y-2 sm:space-y-3 mb-4">
+            {subtasks.map(subtask => (
+              <div 
+                key={subtask.id} 
+                className={`bg-slate-700 border rounded-xl p-3 sm:p-4 transition-all duration-300 ${
+                  subtask.status === 'done' 
+                    ? 'border-green-500/50 bg-green-500/10' 
+                    : 'border-slate-500'
+                }`}
+              >
+                <div className="flex justify-between items-start gap-2 sm:gap-3">
+                  <div className="flex-1 min-w-0">
+                    <h4 className={`font-medium text-sm sm:text-base ${subtask.status === 'done' ? 'text-green-300 line-through' : 'text-white'}`}>
+                      {subtask.title}
+                    </h4>
+                    <div className="flex items-center space-x-3 sm:space-x-4 mt-2 text-xs sm:text-sm text-slate-300">
+                      <span className="flex items-center space-x-1">
+                        <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span>{subtask.estimated_minutes} мин</span>
+                      </span>
+                      <span className={`flex items-center space-x-1 ${
+                        subtask.difficulty >= 4 ? 'text-red-400' : 
+                        subtask.difficulty >= 3 ? 'text-orange-400' : 
+                        subtask.difficulty >= 2 ? 'text-yellow-400' : 'text-green-400'
+                      }`}>
+                        <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                        <span>{subtask.difficulty}/5</span>
+                      </span>
+                    </div>
+                  </div>
+                  {subtask.status !== 'done' && (
+                    <button
+                      onClick={() => handleCompleteSubtask(subtask.id)}
+                      className="bg-gradient-to-r from-green-500 to-emerald-500 text-white p-2 rounded-lg hover:from-green-600 hover:to-emerald-600 transition-all duration-300 transform hover:scale-110 shadow border border-green-400/30 flex-shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center"
+                    >
+                      <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Кнопки действий */}
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+          {canAddSubtasks && (
+            <button
+              onClick={() => setShowAddSubtask(true)}
+              className="flex-1 bg-gradient-to-r from-blue-500 to-purple-500 text-white py-3 rounded-xl hover:from-blue-600 hover:to-purple-600 transition-all duration-300 transform hover:scale-105 font-semibold border border-blue-400/30 text-sm sm:text-base min-h-[44px]"
+            >
+              Добавить подзадачу
+            </button>
+          )}
+          {totalSubtasks > 0 && completedSubtasks === totalSubtasks && (
+            <button
+              onClick={handleCompleteAll}
+              className="px-4 sm:px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl hover:from-green-600 hover:to-emerald-600 transition-all duration-300 transform hover:scale-105 font-semibold border border-green-400/30 text-sm sm:text-base min-h-[44px]"
+            >
+              Завершить все
+            </button>
+          )}
+        </div>
+
+        {/* Модальное окно добавления подзадачи */}
+        {showAddSubtask && (
+          <AddTaskModal
+            onAdd={handleAddSubtask}
+            onClose={() => setShowAddSubtask(false)}
+            title="Новая подзадача"
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+// АДАПТИВНЫЙ СПИСОК ЗАДАЧ
+function TaskList({ tasks, onComplete, onAddTask, currentUser, onTaskUpdate }) {
   const [filter, setFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedTask, setSelectedTask] = useState(null);
+  const [showSubtasks, setShowSubtasks] = useState(false);
 
   const filteredTasks = tasks.filter(task => {
     const matchesFilter = filter === 'all' || 
@@ -120,25 +430,37 @@ function TaskList({ tasks, onComplete, onAddTask, currentUser }) {
     completionRate: tasks.length > 0 ? Math.round((tasks.filter(t => t.status === 'done').length / tasks.length) * 100) : 0
   };
 
+  const handleTaskClick = (task) => {
+    if (task.is_parent || task.parent_id) {
+      setSelectedTask(task);
+      setShowSubtasks(true);
+    }
+  };
+
+  const handleRefresh = () => {
+    if (onTaskUpdate) onTaskUpdate();
+  };
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-        <div>
-          <h2 className="text-xl font-bold text-white">Мои задачи</h2>
-          <p className="text-slate-300 text-sm mt-1">
+    <div className="space-y-4 sm:space-y-6">
+      {/* Заголовок и кнопка */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
+        <div className="flex-1 min-w-0">
+          <h2 className="text-lg sm:text-xl font-bold text-white truncate">Мои задачи</h2>
+          <p className="text-slate-300 text-xs sm:text-sm mt-1">
             {stats.completed} из {stats.total} завершено ({stats.completionRate}%)
           </p>
         </div>
         <button 
           onClick={onAddTask}
-          className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-xl hover:from-blue-600 hover:to-purple-600 transition-all duration-300 transform hover:scale-105 shadow-lg font-semibold w-full lg:w-auto border border-blue-400/30"
+          className="w-full sm:w-auto px-4 py-3 sm:px-6 sm:py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-xl hover:from-blue-600 hover:to-purple-600 transition-all duration-300 transform hover:scale-105 shadow-lg font-semibold border border-blue-400/30 text-sm sm:text-base min-h-[44px]"
         >
           Новая задача
         </button>
       </div>
 
       {/* Поиск и фильтры */}
-      <div className="flex flex-col lg:flex-row gap-4">
+      <div className="flex flex-col gap-3">
         <div className="flex-1">
           <div className="relative">
             <input
@@ -146,10 +468,10 @@ function TaskList({ tasks, onComplete, onAddTask, currentUser }) {
               placeholder="Поиск задач..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full p-4 bg-slate-700 border border-slate-500 rounded-xl text-white placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+              className="w-full p-3 sm:p-4 bg-slate-700 border border-slate-500 rounded-xl text-white placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-base min-h-[44px]"
             />
             <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
             </div>
@@ -164,7 +486,7 @@ function TaskList({ tasks, onComplete, onAddTask, currentUser }) {
             <button
               key={tab.id}
               onClick={() => setFilter(tab.id)}
-              className={`py-2 px-4 rounded-lg text-sm font-medium transition-all duration-300 transform hover:scale-105 ${
+              className={`flex-1 py-2 px-2 sm:px-4 rounded-lg text-xs sm:text-sm font-medium transition-all duration-300 transform hover:scale-105 min-h-[44px] ${
                 filter === tab.id 
                   ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow border border-blue-400/30' 
                   : 'text-slate-300 hover:text-white hover:bg-slate-600'
@@ -176,37 +498,37 @@ function TaskList({ tasks, onComplete, onAddTask, currentUser }) {
         </div>
       </div>
 
-      {/* Статистика */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-slate-700 rounded-xl p-4 text-center border border-slate-500">
-          <div className="text-xl font-bold text-blue-400">{stats.total}</div>
-          <div className="text-slate-300 text-sm">Всего</div>
+      {/* Статистика - адаптивная сетка */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
+        <div className="bg-slate-700 rounded-xl p-3 sm:p-4 text-center border border-slate-500">
+          <div className="text-lg sm:text-xl font-bold text-blue-400">{stats.total}</div>
+          <div className="text-slate-300 text-xs sm:text-sm">Всего</div>
         </div>
-        <div className="bg-slate-700 rounded-xl p-4 text-center border border-slate-500">
-          <div className="text-xl font-bold text-yellow-400">{stats.active}</div>
-          <div className="text-slate-300 text-sm">Активные</div>
+        <div className="bg-slate-700 rounded-xl p-3 sm:p-4 text-center border border-slate-500">
+          <div className="text-lg sm:text-xl font-bold text-yellow-400">{stats.active}</div>
+          <div className="text-slate-300 text-xs sm:text-sm">Активные</div>
         </div>
-        <div className="bg-slate-700 rounded-xl p-4 text-center border border-slate-500">
-          <div className="text-xl font-bold text-green-400">{stats.completed}</div>
-          <div className="text-slate-300 text-sm">Завершено</div>
+        <div className="bg-slate-700 rounded-xl p-3 sm:p-4 text-center border border-slate-500">
+          <div className="text-lg sm:text-xl font-bold text-green-400">{stats.completed}</div>
+          <div className="text-slate-300 text-xs sm:text-sm">Завершено</div>
         </div>
-        <div className="bg-slate-700 rounded-xl p-4 text-center border border-slate-500">
-          <div className="text-xl font-bold text-purple-400">{stats.completionRate}%</div>
-          <div className="text-slate-300 text-sm">Прогресс</div>
+        <div className="bg-slate-700 rounded-xl p-3 sm:p-4 text-center border border-slate-500">
+          <div className="text-lg sm:text-xl font-bold text-purple-400">{stats.completionRate}%</div>
+          <div className="text-slate-300 text-xs sm:text-sm">Прогресс</div>
         </div>
       </div>
 
       {/* Список задач */}
-      <div className="space-y-3">
+      <div className="space-y-2 sm:space-y-3">
         {filteredTasks.length === 0 ? (
-          <div className="text-center py-12 text-slate-400">
-            <svg className="w-16 h-16 mx-auto mb-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="text-center py-8 sm:py-12 text-slate-400">
+            <svg className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
-            <div className="text-lg mb-2">
+            <div className="text-base sm:text-lg mb-2">
               {searchTerm ? 'Задачи не найдены' : 'Задач пока нет'}
             </div>
-            <div className="text-sm">
+            <div className="text-xs sm:text-sm">
               {searchTerm ? 'Попробуйте изменить запрос' : 'Создайте первую задачу'}
             </div>
           </div>
@@ -214,20 +536,31 @@ function TaskList({ tasks, onComplete, onAddTask, currentUser }) {
           filteredTasks.map(task => (
             <div 
               key={task.id} 
-              className={`group bg-slate-700 border rounded-xl p-4 transition-all duration-300 transform hover:scale-105 hover:shadow-lg ${
+              className={`group bg-slate-700 border rounded-xl p-3 sm:p-4 transition-all duration-300 transform hover:scale-105 hover:shadow-lg cursor-pointer ${
                 task.status === 'done' 
                   ? 'border-green-500/50 bg-green-500/10' 
                   : 'border-slate-500 hover:border-blue-500/50'
-              }`}
+              } ${(task.is_parent || task.parent_id) ? 'hover:border-yellow-500/50' : ''}`}
+              onClick={() => handleTaskClick(task)}
             >
-              <div className="flex justify-between items-start">
-                <div className="flex-1">
-                  <h3 className={`font-medium ${task.status === 'done' ? 'text-green-300 line-through' : 'text-white'}`}>
-                    {task.title}
-                  </h3>
-                  <div className="flex items-center space-x-4 mt-2 text-sm text-slate-300">
+              <div className="flex justify-between items-start gap-2 sm:gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-2">
+                    <h3 className={`font-medium text-sm sm:text-base truncate ${
+                      task.status === 'done' ? 'text-green-300 line-through' : 'text-white'
+                    }`}>
+                      {task.title}
+                    </h3>
+                    {(task.is_parent || task.parent_id) && (
+                      <span className="bg-yellow-500/20 text-yellow-300 px-2 py-1 rounded text-xs font-medium shrink-0">
+                        {task.is_parent ? '🎯 Родительская' : '📋 Подзадача'}
+                        {task.status === 'done' && ' ✅'}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-slate-300">
                     <span className="flex items-center space-x-1">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                       <span>{task.estimated_minutes} мин</span>
@@ -237,14 +570,23 @@ function TaskList({ tasks, onComplete, onAddTask, currentUser }) {
                       task.difficulty >= 3 ? 'text-orange-400' : 
                       task.difficulty >= 2 ? 'text-yellow-400' : 'text-green-400'
                     }`}>
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                       </svg>
                       <span>{task.difficulty}/5</span>
                     </span>
+                    {task.task_date && (
+                      <span className="flex items-center space-x-1 text-blue-400">
+                        <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <span className="hidden sm:inline">{new Date(task.task_date).toLocaleDateString('ru-RU')}</span>
+                        <span className="sm:hidden">{new Date(task.task_date).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' })}</span>
+                      </span>
+                    )}
                     {task.status === 'done' && (
                       <span className="text-green-400 flex items-center space-x-1">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                         </svg>
                         <span>Завершено</span>
@@ -252,12 +594,15 @@ function TaskList({ tasks, onComplete, onAddTask, currentUser }) {
                     )}
                   </div>
                 </div>
-                {task.status !== 'done' && (
+                {task.status !== 'done' && !task.is_parent && (
                   <button
-                    onClick={() => onComplete(task.id)}
-                    className="bg-gradient-to-r from-green-500 to-emerald-500 text-white p-2 rounded-lg hover:from-green-600 hover:to-emerald-600 transition-all duration-300 transform hover:scale-110 shadow border border-green-400/30"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onComplete(task.id);
+                    }}
+                    className="bg-gradient-to-r from-green-500 to-emerald-500 text-white p-2 rounded-lg hover:from-green-600 hover:to-emerald-600 transition-all duration-300 transform hover:scale-110 shadow border border-green-400/30 flex-shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center"
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
                   </button>
@@ -267,18 +612,30 @@ function TaskList({ tasks, onComplete, onAddTask, currentUser }) {
           ))
         )}
       </div>
+
+      {/* Панель подзадач */}
+      {showSubtasks && selectedTask && (
+        <SubtasksPanel
+          task={selectedTask}
+          onClose={() => {
+            setShowSubtasks(false);
+            setSelectedTask(null);
+          }}
+          onRefresh={handleRefresh}
+        />
+      )}
     </div>
   );
 }
 
-// УЛУЧШЕННЫЙ ЭНЕРГЕТИЧЕСКИЙ КАЛЕНДАРЬ
+// АДАПТИВНЫЙ ЭНЕРГЕТИЧЕСКИЙ КАЛЕНДАРЬ
 function EnergyCalendar({ tasks, onAddTask }) {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
   const getTasksForDate = (date) => {
     return tasks.filter(task => {
-      const taskDate = new Date(task.created_at);
+      const taskDate = new Date(task.task_date);
       return taskDate.toDateString() === date.toDateString();
     });
   };
@@ -286,12 +643,12 @@ function EnergyCalendar({ tasks, onAddTask }) {
   const getDayEnergy = (date) => {
     const dayTasks = getTasksForDate(date);
     if (dayTasks.length === 0) return 0;
-    
+  
     const totalEnergy = dayTasks.reduce((sum, task) => {
       const energy = task.difficulty * (task.estimated_minutes / 60);
       return sum + (task.status === 'done' ? energy * 0.7 : energy);
     }, 0);
-    
+  
     return Math.min(totalEnergy, 100);
   };
 
@@ -301,17 +658,6 @@ function EnergyCalendar({ tasks, onAddTask }) {
     if (energy < 50) return 'bg-gradient-to-br from-yellow-500 to-amber-500';
     if (energy < 75) return 'bg-gradient-to-br from-orange-500 to-red-500';
     return 'bg-gradient-to-br from-red-500 to-pink-500';
-  };
-
-  const getDifficultyColor = (difficulty) => {
-    switch(difficulty) {
-      case 1: return 'bg-green-500';
-      case 2: return 'bg-yellow-500';
-      case 3: return 'bg-orange-500';
-      case 4: return 'bg-red-500';
-      case 5: return 'bg-purple-500';
-      default: return 'bg-slate-500';
-    }
   };
 
   const navigateMonth = (direction) => {
@@ -344,40 +690,43 @@ function EnergyCalendar({ tasks, onAddTask }) {
         <div 
           key={i}
           className={`
-            relative p-2 rounded-lg cursor-pointer transition-all duration-300 transform hover:scale-110 group
+            relative p-1 sm:p-2 rounded-lg cursor-pointer transition-all duration-300 transform hover:scale-110 group
             ${isSelected ? 'ring-2 ring-blue-500 scale-110' : ''}
             ${isToday ? 'ring-1 ring-slate-400' : ''}
             ${!isCurrentMonth ? 'opacity-40' : getEnergyColor(energyLevel)}
-            min-h-[60px] border border-slate-500/30
+            min-h-[40px] sm:min-h-[60px] border border-slate-500/30 text-xs sm:text-sm
           `}
           onClick={() => setSelectedDate(date)}
         >
           <div className="text-center">
-            <div className={`text-sm font-medium mb-1 ${
+            <div className={`font-medium mb-1 ${
               isCurrentMonth ? 'text-white' : 'text-slate-400'
             }`}>
               {date.getDate()}
             </div>
             
-            {/* Индикаторы задач */}
+            {/* Индикаторы задач - скрываем на маленьких экранах */}
             {dayTasks.length > 0 && (
-              <div className="flex justify-center space-x-1 mb-1">
-                {dayTasks.slice(0, 3).map((task, index) => (
+              <div className="hidden sm:flex justify-center space-x-1 mb-1">
+                {dayTasks.slice(0, 2).map((task, index) => (
                   <div 
                     key={index}
-                    className={`w-2 h-2 rounded-full ${getDifficultyColor(task.difficulty)}`}
-                    title={`${task.title} (${task.difficulty}/5)`}
+                    className={`w-1 h-1 sm:w-2 sm:h-2 rounded-full ${
+                      task.difficulty >= 4 ? 'bg-red-500' : 
+                      task.difficulty >= 3 ? 'bg-orange-500' : 
+                      task.difficulty >= 2 ? 'bg-yellow-500' : 'bg-green-500'
+                    }`}
                   />
                 ))}
-                {dayTasks.length > 3 && (
-                  <div className="text-xs text-white/80">+{dayTasks.length - 3}</div>
+                {dayTasks.length > 2 && (
+                  <div className="text-[10px] text-white/80">+{dayTasks.length - 2}</div>
                 )}
               </div>
             )}
             
-            {/* Уровень энергии */}
+            {/* Уровень энергии - показываем только на больших экранах */}
             {energyLevel > 0 && (
-              <div className="text-xs text-white/90 font-semibold">
+              <div className="hidden sm:block text-[10px] text-white/90 font-semibold">
                 {Math.round(energyLevel)}%
               </div>
             )}
@@ -392,11 +741,11 @@ function EnergyCalendar({ tasks, onAddTask }) {
   const selectedDayTasks = getTasksForDate(selectedDate);
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-        <div>
-          <h2 className="text-xl font-bold text-white">Энергетический календарь</h2>
-          <p className="text-slate-300 text-sm mt-1">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
+        <div className="flex-1 min-w-0">
+          <h2 className="text-lg sm:text-xl font-bold text-white">Энергетический календарь</h2>
+          <p className="text-slate-300 text-xs sm:text-sm mt-1 truncate">
             {selectedDate.toLocaleDateString('ru-RU', { 
               weekday: 'long', 
               year: 'numeric', 
@@ -405,90 +754,72 @@ function EnergyCalendar({ tasks, onAddTask }) {
             })}
           </p>
         </div>
-        <div className="flex gap-3">
-          <div className="flex bg-slate-700 rounded-xl border border-slate-500">
+        <div className="flex gap-2 sm:gap-3 w-full sm:w-auto">
+          <div className="flex bg-slate-700 rounded-xl border border-slate-500 flex-1 sm:flex-none">
             <button 
               onClick={() => navigateMonth(-1)}
-              className="px-4 py-2 text-slate-300 hover:text-white hover:bg-slate-600 rounded-l-xl transition-colors"
+              className="px-3 py-2 sm:px-4 text-slate-300 hover:text-white hover:bg-slate-600 rounded-l-xl transition-colors text-sm min-h-[44px]"
             >
               ←
             </button>
-            <div className="px-4 py-2 text-white font-medium">
-              {currentMonth.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' })}
+            <div className="px-2 sm:px-4 py-2 text-white font-medium text-xs sm:text-sm flex items-center min-w-0 flex-1 justify-center">
+              <span className="truncate">
+                {currentMonth.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' })}
+              </span>
             </div>
             <button 
               onClick={() => navigateMonth(1)}
-              className="px-4 py-2 text-slate-300 hover:text-white hover:bg-slate-600 rounded-r-xl transition-colors"
+              className="px-3 py-2 sm:px-4 text-slate-300 hover:text-white hover:bg-slate-600 rounded-r-xl transition-colors text-sm min-h-[44px]"
             >
               →
             </button>
           </div>
           <button 
-            onClick={onAddTask}
-            className="px-6 py-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-xl hover:from-blue-600 hover:to-purple-600 transition-all duration-300 transform hover:scale-105 shadow font-semibold border border-blue-400/30"
+            onClick={() => onAddTask(selectedDate)}
+            className="px-3 py-2 sm:px-4 sm:py-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-xl hover:from-blue-600 hover:to-purple-600 transition-all duration-300 transform hover:scale-105 shadow font-semibold border border-blue-400/30 text-xs sm:text-sm whitespace-nowrap min-h-[44px]"
           >
-            Добавить задачу
+            Добавить
           </button>
         </div>
       </div>
 
-      {/* Легенда календаря */}
-      <div className="bg-slate-700 rounded-xl p-4 border border-slate-500">
-        <h3 className="text-sm font-semibold text-white mb-3">Легенда энергии:</h3>
-        <div className="flex flex-wrap gap-4 text-xs">
-          <div className="flex items-center space-x-2">
-            <div className="w-4 h-4 bg-slate-600 rounded border border-slate-500"></div>
-            <span className="text-slate-300">Нет активности</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <div className="w-4 h-4 bg-gradient-to-br from-green-500 to-emerald-500 rounded"></div>
-            <span className="text-slate-300">Низкая (1-25%)</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <div className="w-4 h-4 bg-gradient-to-br from-yellow-500 to-amber-500 rounded"></div>
-            <span className="text-slate-300">Средняя (26-50%)</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <div className="w-4 h-4 bg-gradient-to-br from-orange-500 to-red-500 rounded"></div>
-            <span className="text-slate-300">Высокая (51-75%)</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <div className="w-4 h-4 bg-gradient-to-br from-red-500 to-pink-500 rounded"></div>
-            <span className="text-slate-300">Максимальная (76-100%)</span>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-7 gap-1 mb-4">
+      {/* Канбан доска */}
+      <div className="grid grid-cols-7 gap-1 sm:gap-2 mb-3 sm:mb-4">
         {['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'].map(day => (
-          <div key={day} className="text-center font-medium text-slate-400 py-2 text-sm">
+          <div key={day} className="text-center font-medium text-slate-400 py-1 sm:py-2 text-xs sm:text-sm">
             {day}
           </div>
         ))}
       </div>
 
-      <div className="grid grid-cols-7 gap-3">
+      <div className="grid grid-cols-7 gap-1 sm:gap-2">
         {renderMonthView()}
       </div>
 
       {/* Задачи выбранного дня */}
       {selectedDayTasks.length > 0 && (
-        <div className="bg-slate-700 rounded-xl p-4 border border-slate-500">
-          <h3 className="text-lg font-semibold text-white mb-3">
+        <div className="bg-slate-700 rounded-xl p-3 sm:p-4 border border-slate-500 mt-4">
+          <h3 className="text-base sm:text-lg font-semibold text-white mb-2 sm:mb-3">
             Задачи на {selectedDate.toLocaleDateString('ru-RU')}:
           </h3>
           <div className="space-y-2">
             {selectedDayTasks.map(task => (
-              <div key={task.id} className="flex items-center justify-between p-3 bg-slate-600 rounded-lg border border-slate-500">
-                <div className="flex items-center space-x-3">
-                  <div className={`w-3 h-3 rounded-full ${getDifficultyColor(task.difficulty)}`}></div>
-                  <span className={`${task.status === 'done' ? 'text-green-300 line-through' : 'text-white'}`}>
+              <div key={task.id} className="flex items-center justify-between p-2 sm:p-3 bg-slate-600 rounded-lg border border-slate-500">
+                <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
+                  <div className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full ${
+                    task.difficulty >= 4 ? 'bg-red-500' : 
+                    task.difficulty >= 3 ? 'bg-orange-500' : 
+                    task.difficulty >= 2 ? 'bg-yellow-500' : 'bg-green-500'
+                  }`}></div>
+                  <span className={`text-sm sm:text-base truncate ${
+                    task.status === 'done' ? 'text-green-300 line-through' : 'text-white'
+                  }`}>
                     {task.title}
                   </span>
                 </div>
-                <div className="flex items-center space-x-4 text-sm text-slate-300">
-                  <span>{task.estimated_minutes} мин</span>
-                  <span className={`px-2 py-1 rounded ${
+                <div className="flex items-center space-x-2 sm:space-x-4 text-xs sm:text-sm text-slate-300 shrink-0 ml-2">
+                  <span>{task.estimated_minutes}м</span>
+                  <span className={`px-1 sm:px-2 py-1 rounded ${
                     task.difficulty >= 4 ? 'bg-red-500/20 text-red-300' : 
                     task.difficulty >= 3 ? 'bg-orange-500/20 text-orange-300' : 
                     task.difficulty >= 2 ? 'bg-yellow-500/20 text-yellow-300' : 'bg-green-500/20 text-green-300'
@@ -505,7 +836,7 @@ function EnergyCalendar({ tasks, onAddTask }) {
   );
 }
 
-// Улучшенный Pomodoro таймер
+// АДАПТИВНЫЙ Pomodoro таймер
 function PomodoroTimer({ tasks, onTaskComplete }) {
   const [timeLeft, setTimeLeft] = useState(25 * 60);
   const [isRunning, setIsRunning] = useState(false);
@@ -547,43 +878,43 @@ function PomodoroTimer({ tasks, onTaskComplete }) {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       <div className="text-center">
-        <h2 className="text-xl font-bold text-white mb-2">Focus Timer</h2>
-        <p className="text-slate-300">Метод Pomodoro для максимальной продуктивности</p>
+        <h2 className="text-lg sm:text-xl font-bold text-white mb-2">Focus Timer</h2>
+        <p className="text-slate-300 text-sm">Метод Pomodoro для максимальной продуктивности</p>
       </div>
 
       {/* Main timer */}
-      <div className={`relative rounded-2xl p-8 text-center border transition-all duration-300 ${
+      <div className={`relative rounded-2xl p-4 sm:p-8 text-center border transition-all duration-300 ${
         mode === 'work' 
           ? 'bg-gradient-to-br from-red-500/10 to-orange-500/10 border-red-500/30' 
           : 'bg-gradient-to-br from-green-500/10 to-emerald-500/10 border-green-500/30'
       }`}>
-        <div className="text-6xl font-bold text-white mb-4 font-mono">
+        <div className="text-4xl sm:text-6xl font-bold text-white mb-3 sm:mb-4 font-mono">
           {formatTime(timeLeft)}
         </div>
-        <div className={`text-lg font-semibold mb-2 ${
+        <div className={`text-base sm:text-lg font-semibold mb-2 ${
           mode === 'work' ? 'text-red-300' : 'text-green-300'
         }`}>
           {mode === 'work' ? 'Время фокуса' : 'Перерыв'}
         </div>
-        <div className="text-slate-300 text-sm mb-6">
+        <div className="text-slate-300 text-xs sm:text-sm mb-4 sm:mb-6">
           Сессий завершено: <span className="text-blue-400 font-semibold">{sessionsCompleted}</span>
         </div>
 
-        <div className="flex flex-col sm:flex-row justify-center gap-4">
+        <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
           {!isRunning ? (
             <button
               onClick={() => selectedTask && setIsRunning(true)}
               disabled={!selectedTask}
-              className="px-8 py-4 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl hover:from-green-600 hover:to-emerald-600 transition-all duration-300 transform hover:scale-105 shadow font-semibold disabled:opacity-50 disabled:cursor-not-allowed border border-green-400/30"
+              className="px-6 py-3 sm:px-8 sm:py-4 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl hover:from-green-600 hover:to-emerald-600 transition-all duration-300 transform hover:scale-105 shadow font-semibold disabled:opacity-50 disabled:cursor-not-allowed border border-green-400/30 text-sm sm:text-base min-h-[44px]"
             >
               Старт
             </button>
           ) : (
             <button
               onClick={() => setIsRunning(false)}
-              className="px-8 py-4 bg-gradient-to-r from-yellow-500 to-amber-500 text-white rounded-xl hover:from-yellow-600 hover:to-amber-600 transition-all duration-300 transform hover:scale-105 shadow font-semibold border border-yellow-400/30"
+              className="px-6 py-3 sm:px-8 sm:py-4 bg-gradient-to-r from-yellow-500 to-amber-500 text-white rounded-xl hover:from-yellow-600 hover:to-amber-600 transition-all duration-300 transform hover:scale-105 shadow font-semibold border border-yellow-400/30 text-sm sm:text-base min-h-[44px]"
             >
               Пауза
             </button>
@@ -593,7 +924,7 @@ function PomodoroTimer({ tasks, onTaskComplete }) {
               setIsRunning(false);
               setTimeLeft(mode === 'work' ? 25 * 60 : 5 * 60);
             }}
-            className="px-6 py-4 bg-slate-600 border border-slate-500 text-white rounded-xl hover:bg-slate-500 transition-all duration-300 transform hover:scale-105"
+            className="px-4 py-3 sm:px-6 sm:py-4 bg-slate-600 border border-slate-500 text-white rounded-xl hover:bg-slate-500 transition-all duration-300 transform hover:scale-105 text-sm sm:text-base min-h-[44px]"
           >
             Сброс
           </button>
@@ -601,8 +932,8 @@ function PomodoroTimer({ tasks, onTaskComplete }) {
       </div>
 
       {/* Task selection */}
-      <div className="bg-slate-700 rounded-xl p-6 border border-slate-500">
-        <label className="block text-white font-semibold mb-4">
+      <div className="bg-slate-700 rounded-xl p-4 sm:p-6 border border-slate-500">
+        <label className="block text-white font-semibold mb-3 sm:mb-4 text-sm sm:text-base">
           Выберите задачу для фокусировки:
         </label>
         <select
@@ -611,23 +942,23 @@ function PomodoroTimer({ tasks, onTaskComplete }) {
             const task = tasks.find(t => t.id === parseInt(e.target.value));
             setSelectedTask(task);
           }}
-          className="w-full p-4 bg-slate-600 border border-slate-500 rounded-xl text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+          className="w-full p-3 sm:p-4 bg-slate-600 border border-slate-500 rounded-xl text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-sm sm:text-base min-h-[44px]"
           disabled={isRunning}
         >
           <option value="" className="bg-slate-700">-- Выберите задачу --</option>
           {tasks.filter(t => t.status !== 'done').map(task => (
             <option key={task.id} value={task.id} className="bg-slate-700">
-              {task.title} ({task.estimated_minutes}мин, сложность: {task.difficulty})
+              {task.title} ({task.estimated_minutes}мин)
             </option>
           ))}
         </select>
 
         {selectedTask && (
-          <div className="mt-4 p-4 bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/30 rounded-xl">
+          <div className="mt-3 sm:mt-4 p-3 sm:p-4 bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/30 rounded-xl">
             <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-semibold text-white">{selectedTask.title}</h3>
-                <div className="text-blue-300 text-sm mt-1">
+              <div className="min-w-0 flex-1">
+                <h3 className="font-semibold text-white text-sm sm:text-base truncate">{selectedTask.title}</h3>
+                <div className="text-blue-300 text-xs sm:text-sm mt-1">
                   {selectedTask.estimated_minutes} мин • Сложность: {selectedTask.difficulty}/5
                 </div>
               </div>
@@ -639,7 +970,7 @@ function PomodoroTimer({ tasks, onTaskComplete }) {
   );
 }
 
-// Улучшенный профиль с температурной картой
+// АДАПТИВНЫЙ ПРОФИЛЬ
 function UserProfile({ tasks, currentUser }) {
   const completedTasks = tasks.filter(t => t.status === 'done').length;
   const totalTasks = tasks.length;
@@ -647,7 +978,6 @@ function UserProfile({ tasks, currentUser }) {
   const totalMinutes = tasks.reduce((sum, task) => sum + task.estimated_minutes, 0);
   const totalWorkHours = Math.round(totalMinutes / 60);
   
-  // Генерируем аватар на основе ID пользователя
   const getAvatarUrl = (userId) => {
     const colors = ['ff6b6b', '4ecdc4', '45b7d1', '96ceb4', 'feca57', 'ff9ff3', '54a0ff'];
     const color = colors[userId.length % colors.length];
@@ -664,7 +994,6 @@ function UserProfile({ tasks, currentUser }) {
 
   const productivity = getProductivityLevel();
 
-  // Температурная карта активности
   const getWeeklyActivity = () => {
     const weekDays = [];
     const today = new Date();
@@ -691,63 +1020,63 @@ function UserProfile({ tasks, currentUser }) {
   const weeklyActivity = getWeeklyActivity();
 
   return (
-    <div className="space-y-6">
-      <div className="text-center mb-8">
-        <h2 className="text-xl font-bold text-white">Мой профиль</h2>
-        <p className="text-slate-300">Статистика и достижения</p>
+    <div className="space-y-4 sm:space-y-6">
+      <div className="text-center mb-6 sm:mb-8">
+        <h2 className="text-lg sm:text-xl font-bold text-white">Мой профиль</h2>
+        <p className="text-slate-300 text-sm">Статистика и достижения</p>
       </div>
 
       {/* Аватар и основная информация */}
-      <div className="bg-slate-700 rounded-2xl p-6 border border-slate-500">
-        <div className="flex items-center space-x-6">
-          <div className="relative">
+      <div className="bg-slate-700 rounded-2xl p-4 sm:p-6 border border-slate-500">
+        <div className="flex items-center space-x-4 sm:space-x-6">
+          <div className="relative flex-shrink-0">
             <img 
               src={getAvatarUrl(currentUser.id)}
               alt={currentUser.name}
-              className="w-20 h-20 rounded-2xl border-4 border-blue-500 shadow"
+              className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl border-4 border-blue-500 shadow"
             />
           </div>
-          <div className="flex-1">
-            <h3 className="text-xl font-bold text-white">{currentUser.name}</h3>
-            <div className={`inline-block mt-2 px-4 py-1 bg-gradient-to-r ${productivity.color} text-white rounded-full text-sm font-semibold`}>
+          <div className="flex-1 min-w-0">
+            <h3 className="text-lg sm:text-xl font-bold text-white truncate">{currentUser.name}</h3>
+            <div className={`inline-block mt-2 px-3 py-1 bg-gradient-to-r ${productivity.color} text-white rounded-full text-xs sm:text-sm font-semibold`}>
               {productivity.level}
             </div>
-            <p className="text-slate-300 text-sm mt-1">{productivity.description}</p>
+            <p className="text-slate-300 text-xs sm:text-sm mt-1">{productivity.description}</p>
           </div>
         </div>
       </div>
 
       {/* Статистика */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-slate-700 rounded-xl p-4 text-center border border-slate-500">
-          <div className="text-xl font-bold text-blue-400">{totalTasks}</div>
-          <div className="text-slate-300 text-sm">Всего задач</div>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
+        <div className="bg-slate-700 rounded-xl p-3 sm:p-4 text-center border border-slate-500">
+          <div className="text-lg sm:text-xl font-bold text-blue-400">{totalTasks}</div>
+          <div className="text-slate-300 text-xs sm:text-sm">Всего задач</div>
         </div>
-        <div className="bg-slate-700 rounded-xl p-4 text-center border border-slate-500">
-          <div className="text-xl font-bold text-green-400">{completedTasks}</div>
-          <div className="text-slate-300 text-sm">Завершено</div>
+        <div className="bg-slate-700 rounded-xl p-3 sm:p-4 text-center border border-slate-500">
+          <div className="text-lg sm:text-xl font-bold text-green-400">{completedTasks}</div>
+          <div className="text-slate-300 text-xs sm:text-sm">Завершено</div>
         </div>
-        <div className="bg-slate-700 rounded-xl p-4 text-center border border-slate-500">
-          <div className="text-xl font-bold text-purple-400">{completionRate}%</div>
-          <div className="text-slate-300 text-sm">Эффективность</div>
+        <div className="bg-slate-700 rounded-xl p-3 sm:p-4 text-center border border-slate-500">
+          <div className="text-lg sm:text-xl font-bold text-purple-400">{completionRate}%</div>
+          <div className="text-slate-300 text-xs sm:text-sm">Эффективность</div>
         </div>
-        <div className="bg-slate-700 rounded-xl p-4 text-center border border-slate-500">
-          <div className="text-xl font-bold text-orange-400">{totalWorkHours}ч</div>
-          <div className="text-slate-300 text-sm">Всего времени</div>
+        <div className="bg-slate-700 rounded-xl p-3 sm:p-4 text-center border border-slate-500">
+          <div className="text-lg sm:text-xl font-bold text-orange-400">{totalWorkHours}ч</div>
+          <div className="text-slate-300 text-xs sm:text-sm">Всего времени</div>
         </div>
       </div>
 
       {/* Температурная карта активности */}
-      <div className="bg-slate-700 rounded-2xl p-6 border border-slate-500">
-        <h3 className="text-lg font-bold text-white mb-4">📊 Активность за неделю</h3>
-        <div className="grid grid-cols-7 gap-2">
+      <div className="bg-slate-700 rounded-2xl p-4 sm:p-6 border border-slate-500">
+        <h3 className="text-base sm:text-lg font-bold text-white mb-3 sm:mb-4">📊 Активность за неделю</h3>
+        <div className="grid grid-cols-7 gap-1 sm:gap-2">
           {weeklyActivity.map((day, index) => (
             <div key={index} className="text-center">
               <div className="text-xs text-slate-400 mb-1">
                 {day.date.toLocaleDateString('ru-RU', { weekday: 'short' })}
               </div>
               <div className={`
-                w-8 h-8 mx-auto rounded-lg flex items-center justify-center text-xs font-semibold
+                w-6 h-6 sm:w-8 sm:h-8 mx-auto rounded-lg flex items-center justify-center text-xs font-semibold
                 ${day.activity === 0 ? 'bg-slate-600 text-slate-400' : 
                   day.activity <= 2 ? 'bg-green-500/20 text-green-300' : 
                   day.activity <= 4 ? 'bg-yellow-500/20 text-yellow-300' : 
@@ -762,41 +1091,41 @@ function UserProfile({ tasks, currentUser }) {
       </div>
 
       {/* Достижения */}
-      <div className="bg-slate-700 rounded-2xl p-6 border border-slate-500">
-        <h3 className="text-lg font-bold text-white mb-4">🏆 Достижения</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className={`p-4 rounded-xl border transition-all duration-300 ${
+      <div className="bg-slate-700 rounded-2xl p-4 sm:p-6 border border-slate-500">
+        <h3 className="text-base sm:text-lg font-bold text-white mb-3 sm:mb-4">🏆 Достижения</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+          <div className={`p-3 sm:p-4 rounded-xl border transition-all duration-300 ${
             completedTasks >= 10 ? 'bg-yellow-500/20 border-yellow-400' : 'bg-slate-600 border-slate-500'
           }`}>
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-slate-500 rounded-full flex items-center justify-center">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-slate-500 rounded-full flex items-center justify-center flex-shrink-0">
+                <svg className="w-4 h-4 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
-              <div>
-                <div className="font-semibold text-white">Мастер задач</div>
-                <div className="text-slate-300 text-sm">Завершите 10 задач</div>
-                <div className="text-yellow-400 text-sm mt-1">
+              <div className="min-w-0 flex-1">
+                <div className="font-semibold text-white text-sm sm:text-base">Мастер задач</div>
+                <div className="text-slate-300 text-xs sm:text-sm">Завершите 10 задач</div>
+                <div className="text-yellow-400 text-xs sm:text-sm mt-1">
                   {completedTasks >= 10 ? '✅ Завершено!' : `${completedTasks}/10 задач`}
                 </div>
               </div>
             </div>
           </div>
 
-          <div className={`p-4 rounded-xl border transition-all duration-300 ${
+          <div className={`p-3 sm:p-4 rounded-xl border transition-all duration-300 ${
             totalWorkHours >= 5 ? 'bg-green-500/20 border-green-400' : 'bg-slate-600 border-slate-500'
           }`}>
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-slate-500 rounded-full flex items-center justify-center">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-slate-500 rounded-full flex items-center justify-center flex-shrink-0">
+                <svg className="w-4 h-4 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
-              <div>
-                <div className="font-semibold text-white">Трудоголик</div>
-                <div className="text-slate-300 text-sm">Потратьте 5+ часов</div>
-                <div className="text-green-400 text-sm mt-1">
+              <div className="min-w-0 flex-1">
+                <div className="font-semibold text-white text-sm sm:text-base">Трудоголик</div>
+                <div className="text-slate-300 text-xs sm:text-sm">Потратьте 5+ часов</div>
+                <div className="text-green-400 text-xs sm:text-sm mt-1">
                   {totalWorkHours >= 5 ? '✅ Завершено!' : `${totalWorkHours}/5 часов`}
                 </div>
               </div>
@@ -808,10 +1137,13 @@ function UserProfile({ tasks, currentUser }) {
   );
 }
 
-// Улучшенный ежедневный анализ
+// АДАПТИВНЫЙ ЕЖЕДНЕВНЫЙ АНАЛИЗ
 function DailyAnalysis({ tasks }) {
   const today = new Date().toDateString();
-  const todayTasks = tasks.filter(task => new Date(task.created_at).toDateString() === today);
+  const todayTasks = tasks.filter(task => {
+    const taskDate = new Date(task.task_date).toDateString();
+    return taskDate === today;
+  });
   const completedToday = todayTasks.filter(t => t.status === 'done').length;
   const pendingToday = todayTasks.filter(t => t.status !== 'done').length;
 
@@ -883,71 +1215,71 @@ function DailyAnalysis({ tasks }) {
   const tips = getProductivityTips();
 
   return (
-    <div className="space-y-6">
-      <div className="text-center mb-8">
-        <h2 className="text-xl font-bold text-white">Ежедневный анализ</h2>
-        <p className="text-slate-300">Ваша продуктивность сегодня</p>
+    <div className="space-y-4 sm:space-y-6">
+      <div className="text-center mb-6 sm:mb-8">
+        <h2 className="text-lg sm:text-xl font-bold text-white">Ежедневный анализ</h2>
+        <p className="text-slate-300 text-sm">Ваша продуктивность сегодня</p>
       </div>
 
       {/* Основная статистика */}
-      <div className={`bg-gradient-to-r ${motivation.color} rounded-2xl p-8 text-center border`}>
-        <div className="text-4xl mb-4">{motivation.emoji}</div>
-        <div className="text-2xl font-bold text-white mb-4">{motivation.message}</div>
+      <div className={`bg-gradient-to-r ${motivation.color} rounded-2xl p-4 sm:p-8 text-center border`}>
+        <div className="text-3xl sm:text-4xl mb-3 sm:mb-4">{motivation.emoji}</div>
+        <div className="text-xl sm:text-2xl font-bold text-white mb-3 sm:mb-4">{motivation.message}</div>
         
-        <div className="grid grid-cols-3 gap-4 max-w-md mx-auto">
-          <div className="bg-white/10 rounded-xl p-4 backdrop-blur-sm">
-            <div className="text-xl font-bold text-white">{todayTasks.length}</div>
-            <div className="text-white/80 text-sm">Всего</div>
+        <div className="grid grid-cols-3 gap-2 sm:gap-4 max-w-md mx-auto">
+          <div className="bg-white/10 rounded-xl p-2 sm:p-4 backdrop-blur-sm">
+            <div className="text-lg sm:text-xl font-bold text-white">{todayTasks.length}</div>
+            <div className="text-white/80 text-xs sm:text-sm">Всего</div>
           </div>
-          <div className="bg-white/10 rounded-xl p-4 backdrop-blur-sm">
-            <div className="text-xl font-bold text-white">{completedToday}</div>
-            <div className="text-white/80 text-sm">Завершено</div>
+          <div className="bg-white/10 rounded-xl p-2 sm:p-4 backdrop-blur-sm">
+            <div className="text-lg sm:text-xl font-bold text-white">{completedToday}</div>
+            <div className="text-white/80 text-xs sm:text-sm">Завершено</div>
           </div>
-          <div className="bg-white/10 rounded-xl p-4 backdrop-blur-sm">
-            <div className="text-xl font-bold text-white">{pendingToday}</div>
-            <div className="text-white/80 text-sm">В процессе</div>
+          <div className="bg-white/10 rounded-xl p-2 sm:p-4 backdrop-blur-sm">
+            <div className="text-lg sm:text-xl font-bold text-white">{pendingToday}</div>
+            <div className="text-white/80 text-xs sm:text-sm">В процессе</div>
           </div>
         </div>
       </div>
 
       {/* Рекомендации */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-slate-700 rounded-xl p-6 border border-slate-500">
-          <h3 className="text-lg font-bold text-white mb-4">💡 Советы на сегодня</h3>
-          <div className="space-y-3">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+        <div className="bg-slate-700 rounded-xl p-4 sm:p-6 border border-slate-500">
+          <h3 className="text-base sm:text-lg font-bold text-white mb-3 sm:mb-4">💡 Советы на сегодня</h3>
+          <div className="space-y-2 sm:space-y-3">
             {tips.map((tip, index) => (
-              <div key={index} className="flex items-start space-x-3">
+              <div key={index} className="flex items-start space-x-2 sm:space-x-3">
                 <div className="w-2 h-2 bg-blue-400 rounded-full mt-2 flex-shrink-0"></div>
-                <p className="text-slate-300 text-sm">{tip}</p>
+                <p className="text-slate-300 text-xs sm:text-sm">{tip}</p>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="bg-slate-700 rounded-xl p-6 border border-slate-500">
-          <h3 className="text-lg font-bold text-white mb-4">📊 Быстрая статистика</h3>
-          <div className="space-y-4">
+        <div className="bg-slate-700 rounded-xl p-4 sm:p-6 border border-slate-500">
+          <h3 className="text-base sm:text-lg font-bold text-white mb-3 sm:mb-4">📊 Быстрая статистика</h3>
+          <div className="space-y-3 sm:space-y-4">
             <div className="flex justify-between items-center">
-              <span className="text-slate-300">Эффективность:</span>
-              <span className="text-blue-400 font-semibold">
+              <span className="text-slate-300 text-sm">Эффективность:</span>
+              <span className="text-blue-400 font-semibold text-sm">
                 {todayTasks.length ? Math.round((completedToday / todayTasks.length) * 100) : 0}%
               </span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-slate-300">Время работы:</span>
-              <span className="text-yellow-400 font-semibold">
+              <span className="text-slate-300 text-sm">Время работы:</span>
+              <span className="text-yellow-400 font-semibold text-sm">
                 {Math.round(todayTasks.reduce((sum, task) => sum + task.estimated_minutes, 0) / 60)}ч
               </span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-slate-300">Средняя сложность:</span>
-              <span className="text-purple-400 font-semibold">
+              <span className="text-slate-300 text-sm">Средняя сложность:</span>
+              <span className="text-purple-400 font-semibold text-sm">
                 {todayTasks.length ? Math.round(todayTasks.reduce((sum, task) => sum + task.difficulty, 0) / todayTasks.length) : 0}/5
               </span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-slate-300">Продуктивность:</span>
-              <span className={`font-semibold ${
+              <span className="text-slate-300 text-sm">Продуктивность:</span>
+              <span className={`font-semibold text-sm ${
                 completedToday >= pendingToday ? 'text-green-400' : 'text-orange-400'
               }`}>
                 {completedToday >= pendingToday ? 'Высокая' : 'Можно лучше'}
@@ -960,7 +1292,7 @@ function DailyAnalysis({ tasks }) {
   );
 }
 
-// КАНБАН ДОСКА - ПОЛНОСТЬЮ ПЕРЕПИСАННАЯ ВЕРСИЯ
+// АДАПТИВНЫЙ КАНБАН ДОСКА - ИСПРАВЛЕННАЯ ВЕРСИЯ
 function KanbanBoard({ currentUser }) {
   const [projects, setProjects] = useState([]);
   const [selectedProjectId, setSelectedProjectId] = useState(null);
@@ -999,7 +1331,6 @@ function KanbanBoard({ currentUser }) {
       }
     } catch (error) {
       console.error("Error loading projects:", error);
-      alert("Ошибка при загрузке проектов");
     } finally {
       setLoading(false);
     }
@@ -1028,7 +1359,6 @@ function KanbanBoard({ currentUser }) {
       console.log("Project created successfully:", result);
       
       setShowCreateProject(false);
-      // Полностью перезагружаем проекты
       await loadProjects();
       
     } catch (error) {
@@ -1067,7 +1397,6 @@ function KanbanBoard({ currentUser }) {
       console.log("Card created successfully:", result);
       
       setShowCreateCard(false);
-      // Полностью перезагружаем проекты
       await loadProjects();
       
     } catch (error) {
@@ -1094,7 +1423,6 @@ function KanbanBoard({ currentUser }) {
         return false;
       }
       
-      // Полностью перезагружаем проекты после успешного перемещения
       await loadProjects();
       return true;
       
@@ -1114,7 +1442,6 @@ function KanbanBoard({ currentUser }) {
         throw new Error("Failed to delete card");
       }
 
-      // Полностью перезагружаем проекты
       await loadProjects();
       
     } catch (error) {
@@ -1133,7 +1460,6 @@ function KanbanBoard({ currentUser }) {
         throw new Error("Failed to delete project");
       }
 
-      // Полностью перезагружаем проекты
       await loadProjects();
       
     } catch (error) {
@@ -1155,7 +1481,6 @@ function KanbanBoard({ currentUser }) {
     e.preventDefault();
     
     if (draggedCard && draggedCard.sourceColumnId !== targetColumn.id) {
-      // Calculate new position (add to the end of the target column)
       const targetColumnCards = targetColumn.cards || [];
       const newPosition = targetColumnCards.length > 0 
         ? Math.max(...targetColumnCards.map(c => c.position)) + 1 
@@ -1191,29 +1516,29 @@ function KanbanBoard({ currentUser }) {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center py-12">
-        <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-        <span className="ml-3 text-white">Загрузка канбан-доски...</span>
+      <div className="flex justify-center items-center py-8 sm:py-12">
+        <div className="w-6 h-6 sm:w-8 sm:h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+        <span className="ml-2 sm:ml-3 text-white text-sm sm:text-base">Загрузка канбан-доски...</span>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Заголовок и управление проектами */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-        <div>
-          <h2 className="text-xl font-bold text-white">Канбан доска</h2>
-          <p className="text-slate-300 text-sm mt-1">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
+        <div className="flex-1 min-w-0">
+          <h2 className="text-lg sm:text-xl font-bold text-white">Канбан доска</h2>
+          <p className="text-slate-300 text-xs sm:text-sm mt-1">
             Управляйте задачами визуально
           </p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex gap-2 sm:gap-3 w-full sm:w-auto">
           {projects.length > 0 && (
             <select
               value={selectedProjectId || ''}
               onChange={(e) => setSelectedProjectId(parseInt(e.target.value))}
-              className="px-4 py-2 bg-slate-700 border border-slate-500 rounded-xl text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="px-3 py-2 sm:px-4 bg-slate-700 border border-slate-500 rounded-xl text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base min-h-[44px] flex-1 sm:flex-none"
             >
               {projects.map(project => (
                 <option key={project.id} value={project.id}>
@@ -1224,7 +1549,7 @@ function KanbanBoard({ currentUser }) {
           )}
           <button 
             onClick={() => setShowCreateProject(true)}
-            className="px-6 py-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-xl hover:from-blue-600 hover:to-purple-600 transition-all duration-300 transform hover:scale-105 shadow font-semibold border border-blue-400/30"
+            className="px-3 py-2 sm:px-4 sm:py-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-xl hover:from-blue-600 hover:to-purple-600 transition-all duration-300 transform hover:scale-105 shadow font-semibold border border-blue-400/30 text-xs sm:text-sm whitespace-nowrap min-h-[44px]"
           >
             Новый проект
           </button>
@@ -1232,17 +1557,17 @@ function KanbanBoard({ currentUser }) {
       </div>
 
       {projects.length === 0 ? (
-        <div className="text-center py-12">
-          <div className="w-24 h-24 bg-slate-700 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-slate-500">
-            <svg className="w-12 h-12 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="text-center py-8 sm:py-12">
+          <div className="w-16 h-16 sm:w-24 sm:h-24 bg-slate-700 rounded-2xl flex items-center justify-center mx-auto mb-3 sm:mb-4 border border-slate-500">
+            <svg className="w-8 h-8 sm:w-12 sm:h-12 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
             </svg>
           </div>
-          <h3 className="text-lg font-semibold text-white mb-2">Нет проектов</h3>
-          <p className="text-slate-300 mb-4">Создайте свой первый проект для начала работы</p>
+          <h3 className="text-base sm:text-lg font-semibold text-white mb-2">Нет проектов</h3>
+          <p className="text-slate-300 text-sm mb-3 sm:mb-4">Создайте свой первый проект для начала работы</p>
           <button 
             onClick={() => setShowCreateProject(true)}
-            className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-xl hover:from-blue-600 hover:to-purple-600 transition-all duration-300 transform hover:scale-105 shadow font-semibold border border-blue-400/30"
+            className="px-4 py-3 sm:px-6 sm:py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-xl hover:from-blue-600 hover:to-purple-600 transition-all duration-300 transform hover:scale-105 shadow font-semibold border border-blue-400/30 text-sm sm:text-base min-h-[44px]"
           >
             Создать проект
           </button>
@@ -1250,11 +1575,11 @@ function KanbanBoard({ currentUser }) {
       ) : selectedProject ? (
         <div className="space-y-4">
           {/* Информация о проекте */}
-          <div className="flex justify-between items-center">
-            <div>
-              <h3 className="text-lg font-bold text-white">{selectedProject.title}</h3>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+            <div className="flex-1 min-w-0">
+              <h3 className="text-lg font-bold text-white truncate">{selectedProject.title}</h3>
               {selectedProject.description && (
-                <p className="text-slate-300 text-sm mt-1">{selectedProject.description}</p>
+                <p className="text-slate-300 text-sm mt-1 truncate">{selectedProject.description}</p>
               )}
             </div>
             <button
@@ -1263,18 +1588,18 @@ function KanbanBoard({ currentUser }) {
                   deleteProject(selectedProject.id);
                 }
               }}
-              className="px-4 py-2 bg-red-500/20 text-red-300 border border-red-500/30 rounded-xl hover:bg-red-500/30 transition-all duration-300"
+              className="px-3 py-2 bg-red-500/20 text-red-300 border border-red-500/30 rounded-xl hover:bg-red-500/30 transition-all duration-300 text-sm min-h-[44px] w-full sm:w-auto mt-2 sm:mt-0"
             >
               Удалить проект
             </button>
           </div>
 
-          {/* Канбан доска */}
-          <div className="flex space-x-4 overflow-x-auto pb-4 scrollbar-hide">
-            {selectedProject.columns.map(column => (
+          {/* Канбан доска - адаптивная версия */}
+          <div className="flex flex-col lg:flex-row lg:space-x-4 space-y-4 lg:space-y-0 overflow-hidden">
+            {selectedProject.columns && selectedProject.columns.map(column => (
               <div 
                 key={column.id}
-                className="flex-shrink-0 w-80 bg-slate-700 rounded-xl border border-slate-500"
+                className="flex-shrink-0 bg-slate-700 rounded-xl border border-slate-500 w-full lg:w-80"
                 onDragOver={handleDragOver}
                 onDrop={(e) => handleDrop(e, column)}
               >
@@ -1284,18 +1609,18 @@ function KanbanBoard({ currentUser }) {
                   style={{ backgroundColor: column.color + '20' }}
                 >
                   <div className="flex justify-between items-center">
-                    <h3 className="font-semibold text-white" style={{ color: column.color }}>
+                    <h3 className="font-semibold text-white text-sm sm:text-base truncate" style={{ color: column.color }}>
                       {column.title}
                     </h3>
-                    <span className="text-slate-300 text-sm bg-slate-600 px-2 py-1 rounded">
-                      {column.cards.length}
+                    <span className="text-slate-300 text-xs sm:text-sm bg-slate-600 px-2 py-1 rounded">
+                      {column.cards ? column.cards.length : 0}
                     </span>
                   </div>
                 </div>
 
                 {/* Карточки в колонке */}
-                <div className="p-3 space-y-3 min-h-96 max-h-96 overflow-y-auto">
-                  {column.cards.map(card => (
+                <div className="p-3 space-y-3 min-h-48 max-h-96 overflow-y-auto">
+                  {column.cards && column.cards.map(card => (
                     <div
                       key={card.id}
                       draggable
@@ -1303,14 +1628,14 @@ function KanbanBoard({ currentUser }) {
                       className={`bg-slate-600 rounded-lg p-3 border-l-4 cursor-move transition-all duration-300 transform hover:scale-105 hover:shadow-lg ${getPriorityColor(card.priority)}`}
                     >
                       <div className="flex justify-between items-start mb-2">
-                        <h4 className="font-medium text-white flex-1">{card.title}</h4>
+                        <h4 className="font-medium text-white text-sm sm:text-base flex-1 pr-2">{card.title}</h4>
                         <button
                           onClick={() => {
                             if (confirm(`Удалить карточку "${card.title}"?`)) {
                               deleteCard(card.id);
                             }
                           }}
-                          className="text-slate-400 hover:text-red-400 transition-colors ml-2"
+                          className="text-slate-400 hover:text-red-400 transition-colors flex-shrink-0"
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -1319,19 +1644,21 @@ function KanbanBoard({ currentUser }) {
                       </div>
                       
                       {card.description && (
-                        <p className="text-slate-300 text-sm mb-2">{card.description}</p>
+                        <p className="text-slate-300 text-xs sm:text-sm mb-2 line-clamp-2">{card.description}</p>
                       )}
                       
-                      <div className="flex flex-wrap gap-1 mb-2">
-                        {card.tags.map((tag, index) => (
-                          <span 
-                            key={index}
-                            className="px-2 py-1 bg-blue-500/20 text-blue-300 rounded text-xs"
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
+                      {card.tags && card.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mb-2">
+                          {card.tags.map((tag, index) => (
+                            <span 
+                              key={index}
+                              className="px-2 py-1 bg-blue-500/20 text-blue-300 rounded text-xs"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                       
                       <div className="flex justify-between items-center text-xs text-slate-400">
                         {card.estimated_minutes > 0 && (
@@ -1348,7 +1675,7 @@ function KanbanBoard({ currentUser }) {
                       setSelectedColumn(column);
                       setShowCreateCard(true);
                     }}
-                    className="w-full p-3 border-2 border-dashed border-slate-500 rounded-lg text-slate-400 hover:text-white hover:border-slate-400 transition-all duration-300 transform hover:scale-105 text-center"
+                    className="w-full p-3 border-2 border-dashed border-slate-500 rounded-lg text-slate-400 hover:text-white hover:border-slate-400 transition-all duration-300 transform hover:scale-105 text-center text-sm sm:text-base min-h-[44px]"
                   >
                     + Добавить карточку
                   </button>
@@ -1400,13 +1727,13 @@ function CreateProjectModal({ onCreate, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
-      <div className="bg-slate-800 rounded-2xl p-6 w-full max-w-md border border-slate-600 shadow-xl">
-        <div className="flex justify-between items-center mb-6">
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-3 sm:p-4 z-50">
+      <div className="bg-slate-800 rounded-2xl p-4 sm:p-6 w-full max-w-md border border-slate-600 shadow-xl mx-2">
+        <div className="flex justify-between items-center mb-4 sm:mb-6">
           <h3 className="text-lg font-bold text-white">Новый проект</h3>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-white transition-colors text-2xl transform hover:scale-110"
+            className="text-slate-400 hover:text-white transition-colors text-2xl transform hover:scale-110 min-h-[44px] min-w-[44px] flex items-center justify-center"
           >
             ×
           </button>
@@ -1421,7 +1748,7 @@ function CreateProjectModal({ onCreate, onClose }) {
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full p-3 bg-slate-700 border border-slate-500 rounded-xl text-white placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full p-3 bg-slate-700 border border-slate-500 rounded-xl text-white placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base min-h-[44px]"
               placeholder="Введите название проекта"
               autoFocus
             />
@@ -1434,7 +1761,7 @@ function CreateProjectModal({ onCreate, onClose }) {
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full p-3 bg-slate-700 border border-slate-500 rounded-xl text-white placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full p-3 bg-slate-700 border border-slate-500 rounded-xl text-white placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base"
               placeholder="Описание проекта"
               rows="3"
             />
@@ -1449,7 +1776,7 @@ function CreateProjectModal({ onCreate, onClose }) {
                 <button
                   key={colorOption}
                   onClick={() => setColor(colorOption)}
-                  className={`w-8 h-8 rounded-full border-2 transition-transform ${
+                  className={`w-8 h-8 rounded-full border-2 transition-transform min-h-[32px] ${
                     color === colorOption ? 'border-white scale-110' : 'border-slate-500'
                   }`}
                   style={{ backgroundColor: colorOption }}
@@ -1459,17 +1786,17 @@ function CreateProjectModal({ onCreate, onClose }) {
           </div>
         </div>
 
-        <div className="flex gap-3 mt-6">
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mt-6">
           <button
             onClick={handleSubmit}
             disabled={!title.trim()}
-            className="flex-1 bg-gradient-to-r from-blue-500 to-purple-500 text-white py-3 rounded-xl hover:from-blue-600 hover:to-purple-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105 font-semibold"
+            className="flex-1 bg-gradient-to-r from-blue-500 to-purple-500 text-white py-3 rounded-xl hover:from-blue-600 hover:to-purple-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105 font-semibold text-sm sm:text-base min-h-[44px]"
           >
             Создать проект
           </button>
           <button
             onClick={onClose}
-            className="px-6 py-3 bg-slate-700 border border-slate-500 text-white rounded-xl hover:bg-slate-600 transition-all duration-300"
+            className="px-4 sm:px-6 py-3 bg-slate-700 border border-slate-500 text-white rounded-xl hover:bg-slate-600 transition-all duration-300 text-sm sm:text-base min-h-[44px]"
           >
             Отмена
           </button>
@@ -1494,13 +1821,13 @@ function CreateCardModal({ column, onCreate, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
-      <div className="bg-slate-800 rounded-2xl p-6 w-full max-w-md border border-slate-600 shadow-xl">
-        <div className="flex justify-between items-center mb-6">
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-3 sm:p-4 z-50">
+      <div className="bg-slate-800 rounded-2xl p-4 sm:p-6 w-full max-w-md border border-slate-600 shadow-xl mx-2 max-h-[90vh] overflow-y-auto">
+        <div className="flex justify-between items-center mb-4 sm:mb-6">
           <h3 className="text-lg font-bold text-white">Новая карточка</h3>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-white transition-colors text-2xl transform hover:scale-110"
+            className="text-slate-400 hover:text-white transition-colors text-2xl transform hover:scale-110 min-h-[44px] min-w-[44px] flex items-center justify-center"
           >
             ×
           </button>
@@ -1515,7 +1842,7 @@ function CreateCardModal({ column, onCreate, onClose }) {
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full p-3 bg-slate-700 border border-slate-500 rounded-xl text-white placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full p-3 bg-slate-700 border border-slate-500 rounded-xl text-white placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base min-h-[44px]"
               placeholder="Что нужно сделать?"
               autoFocus
             />
@@ -1528,13 +1855,13 @@ function CreateCardModal({ column, onCreate, onClose }) {
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full p-3 bg-slate-700 border border-slate-500 rounded-xl text-white placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full p-3 bg-slate-700 border border-slate-500 rounded-xl text-white placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base"
               placeholder="Подробное описание задачи"
               rows="3"
             />
           </div>
           
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-2">
                 Приоритет
@@ -1542,7 +1869,7 @@ function CreateCardModal({ column, onCreate, onClose }) {
               <select
                 value={priority}
                 onChange={(e) => setPriority(e.target.value)}
-                className="w-full p-3 bg-slate-700 border border-slate-500 rounded-xl text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full p-3 bg-slate-700 border border-slate-500 rounded-xl text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base min-h-[44px]"
               >
                 <option value="1">🟢 Низкий</option>
                 <option value="2">🔵 Средний</option>
@@ -1560,7 +1887,7 @@ function CreateCardModal({ column, onCreate, onClose }) {
                 type="number"
                 value={estimatedMinutes}
                 onChange={(e) => setEstimatedMinutes(e.target.value)}
-                className="w-full p-3 bg-slate-700 border border-slate-500 rounded-xl text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full p-3 bg-slate-700 border border-slate-500 rounded-xl text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base min-h-[44px]"
                 min="0"
                 max="480"
               />
@@ -1575,23 +1902,23 @@ function CreateCardModal({ column, onCreate, onClose }) {
               type="text"
               value={tags}
               onChange={(e) => setTags(e.target.value)}
-              className="w-full p-3 bg-slate-700 border border-slate-500 rounded-xl text-white placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full p-3 bg-slate-700 border border-slate-500 rounded-xl text-white placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base min-h-[44px]"
               placeholder="дизайн, разработка, тестирование"
             />
           </div>
         </div>
 
-        <div className="flex gap-3 mt-6">
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mt-6">
           <button
             onClick={handleSubmit}
             disabled={!title.trim()}
-            className="flex-1 bg-gradient-to-r from-blue-500 to-purple-500 text-white py-3 rounded-xl hover:from-blue-600 hover:to-purple-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105 font-semibold"
+            className="flex-1 bg-gradient-to-r from-blue-500 to-purple-500 text-white py-3 rounded-xl hover:from-blue-600 hover:to-purple-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105 font-semibold text-sm sm:text-base min-h-[44px]"
           >
             Создать карточку
           </button>
           <button
             onClick={onClose}
-            className="px-6 py-3 bg-slate-700 border border-slate-500 text-white rounded-xl hover:bg-slate-600 transition-all duration-300"
+            className="px-4 sm:px-6 py-3 bg-slate-700 border border-slate-500 text-white rounded-xl hover:bg-slate-600 transition-all duration-300 text-sm sm:text-base min-h-[44px]"
           >
             Отмена
           </button>
@@ -1601,70 +1928,97 @@ function CreateCardModal({ column, onCreate, onClose }) {
   );
 }
 
-// Улучшенное модальное окно добавления задачи
-function AddTaskModal({ onAdd, onClose }) {
-  const [title, setTitle] = useState("");
+// Исправленное модальное окно добавления задачи
+function AddTaskModal({ onAdd, onClose, selectedDate, title = "Новая задача" }) {
+  const [taskTitle, setTaskTitle] = useState("");
   const [minutes, setMinutes] = useState(25);
   const [difficulty, setDifficulty] = useState(2);
+  const [taskDate, setTaskDate] = useState(
+    selectedDate ? selectedDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
+  );
+  const [isParentTask, setIsParentTask] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = () => {
-    if (title.trim()) {
-      onAdd(title, minutes, difficulty);
+  const handleSubmit = async () => {
+    if (!taskTitle.trim()) {
+      alert("Пожалуйста, введите название задачи");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await onAdd(taskTitle, minutes, difficulty, taskDate, isParentTask);
       onClose();
+    } catch (error) {
+      console.error("Error in AddTaskModal:", error);
+      alert("Произошла ошибка при создании задачи");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter' && !isSubmitting) {
+      handleSubmit();
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
-      <div className="bg-slate-800 rounded-2xl p-6 w-full max-w-md border border-slate-600 shadow-xl">
-        <div className="flex justify-between items-center mb-6">
-          <h3 className="text-lg font-bold text-white">Новая задача</h3>
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-3 sm:p-4 z-50">
+      <div className="bg-slate-800 rounded-2xl p-4 sm:p-6 w-full max-w-md border border-slate-600 shadow-xl mx-2 max-h-[90vh] overflow-y-auto">
+        <div className="flex justify-between items-center mb-4 sm:mb-6">
+          <h3 className="text-lg font-bold text-white">{title}</h3>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-white transition-colors text-2xl transform hover:scale-110"
+            disabled={isSubmitting}
+            className="text-slate-400 hover:text-white transition-colors text-2xl transform hover:scale-110 min-h-[44px] min-w-[44px] flex items-center justify-center disabled:opacity-50"
           >
             ×
           </button>
         </div>
         
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-3">
-              Название задачи
+            <label className="block text-sm font-medium text-slate-300 mb-2 sm:mb-3">
+              Название задачи *
             </label>
             <input
               type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="w-full p-4 bg-slate-700 border border-slate-500 rounded-xl text-white placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+              value={taskTitle}
+              onChange={(e) => setTaskTitle(e.target.value)}
+              onKeyPress={handleKeyPress}
+              className="w-full p-3 sm:p-4 bg-slate-700 border border-slate-500 rounded-xl text-white placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-base min-h-[44px]"
               placeholder="Что нужно сделать?"
               autoFocus
+              disabled={isSubmitting}
             />
           </div>
           
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4">
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-3">
+              <label className="block text-sm font-medium text-slate-300 mb-2 sm:mb-3">
                 Время (минут)
               </label>
               <input
                 type="number"
                 value={minutes}
                 onChange={(e) => setMinutes(parseInt(e.target.value) || 0)}
-                className="w-full p-4 bg-slate-700 border border-slate-500 rounded-xl text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                className="w-full p-3 sm:p-4 bg-slate-700 border border-slate-500 rounded-xl text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-base min-h-[44px]"
                 min="0"
                 max="480"
+                disabled={isSubmitting}
               />
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-3">
+              <label className="block text-sm font-medium text-slate-300 mb-2 sm:mb-3">
                 Сложность
               </label>
               <select
                 value={difficulty}
                 onChange={(e) => setDifficulty(parseInt(e.target.value))}
-                className="w-full p-4 bg-slate-700 border border-slate-500 rounded-xl text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                className="w-full p-3 sm:p-4 bg-slate-700 border border-slate-500 rounded-xl text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-base min-h-[44px]"
+                disabled={isSubmitting}
               >
                 <option value={1}>🟢 Легко</option>
                 <option value={2}>🟡 Средне</option>
@@ -1674,19 +2028,84 @@ function AddTaskModal({ onAdd, onClose }) {
               </select>
             </div>
           </div>
+
+          <div className="grid grid-cols-2 gap-3 sm:gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2 sm:mb-3">
+                Дата выполнения
+              </label>
+              <input
+                type="date"
+                value={taskDate}
+                onChange={(e) => setTaskDate(e.target.value)}
+                className="w-full p-3 sm:p-4 bg-slate-700 border border-slate-500 rounded-xl text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-base min-h-[44px]"
+                min={new Date().toISOString().split('T')[0]}
+                disabled={isSubmitting}
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2 sm:mb-3">
+                Тип задачи
+              </label>
+              <div className="flex space-x-3 sm:space-x-4 mt-2">
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="taskType"
+                    checked={!isParentTask}
+                    onChange={() => setIsParentTask(false)}
+                    className="w-4 h-4 text-blue-500 bg-slate-600 border-slate-500 focus:ring-blue-500"
+                    disabled={isSubmitting}
+                  />
+                  <span className="text-slate-300 text-sm">Обычная</span>
+                </label>
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="taskType"
+                    checked={isParentTask}
+                    onChange={() => setIsParentTask(true)}
+                    className="w-4 h-4 text-blue-500 bg-slate-600 border-slate-500 focus:ring-blue-500"
+                    disabled={isSubmitting}
+                  />
+                  <span className="text-slate-300 text-sm">С подзадачами</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          {isParentTask && (
+            <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-3 sm:p-4">
+              <div className="flex items-center space-x-2 text-blue-300">
+                <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span className="text-xs sm:text-sm">Эта задача будет разложена на подзадачи автоматически</span>
+              </div>
+            </div>
+          )}
         </div>
 
-        <div className="flex gap-3 mt-8">
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mt-6 sm:mt-8">
           <button
             onClick={handleSubmit}
-            disabled={!title.trim()}
-            className="flex-1 bg-gradient-to-r from-blue-500 to-purple-500 text-white py-4 rounded-xl hover:from-blue-600 hover:to-purple-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105 font-semibold shadow border border-blue-400/30"
+            disabled={!taskTitle.trim() || isSubmitting}
+            className="flex-1 bg-gradient-to-r from-blue-500 to-purple-500 text-white py-3 sm:py-4 rounded-xl hover:from-blue-600 hover:to-purple-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105 font-semibold shadow border border-blue-400/30 text-sm sm:text-base min-h-[44px] flex items-center justify-center"
           >
-            Создать задачу
+            {isSubmitting ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2"></div>
+                Создание...
+              </>
+            ) : (
+              "Создать задачу"
+            )}
           </button>
           <button
             onClick={onClose}
-            className="px-6 py-4 bg-slate-700 border border-slate-500 text-white rounded-xl hover:bg-slate-600 transition-all duration-300 transform hover:scale-105"
+            disabled={isSubmitting}
+            className="px-4 sm:px-6 py-3 sm:py-4 bg-slate-700 border border-slate-500 text-white rounded-xl hover:bg-slate-600 transition-all duration-300 transform hover:scale-105 text-sm sm:text-base min-h-[44px] disabled:opacity-50"
           >
             Отмена
           </button>
@@ -1696,11 +2115,12 @@ function AddTaskModal({ onAdd, onClose }) {
   );
 }
 
-// Главный компонент приложения
+// Исправленный главный компонент App
 export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [tasks, setTasks] = useState([]);
   const [showAddTask, setShowAddTask] = useState(false);
+  const [selectedDateForTask, setSelectedDateForTask] = useState(null);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('tasks');
 
@@ -1719,6 +2139,8 @@ export default function App() {
       if (response.ok) {
         const data = await response.json();
         setTasks(data.tasks || data || []);
+      } else {
+        console.error("Failed to load tasks:", response.status);
       }
     } catch (error) {
       console.error("Error loading tasks:", error);
@@ -1745,28 +2167,61 @@ export default function App() {
     localStorage.removeItem("taskbot_user");
   };
 
-  const handleAddTask = async (title, minutes, difficulty) => {
-    if (!currentUser) return;
+  // ИСПРАВЛЕННЫЙ обработчик добавления задачи
+  const handleAddTask = async (title, minutes, difficulty, taskDate = null, isParentTask = false) => {
+    if (!currentUser) {
+      console.error("No current user");
+      return;
+    }
 
     try {
-      const response = await fetch(`${API}/tasks/create?external_id=${currentUser.id}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          title,
-          estimated_minutes: minutes,
-          difficulty
-        }),
-      });
+      let taskData = {
+        title: title.trim(),
+        estimated_minutes: parseInt(minutes) || 25,
+        difficulty: parseInt(difficulty) || 2
+      };
+
+      // Если указана дата, добавляем её в запрос
+      if (taskDate) {
+        taskData.task_date = taskDate;
+      }
+
+      console.log("Creating task with data:", taskData, "isParentTask:", isParentTask);
+
+      let response;
+      
+      // Если это родительская задача, используем специальный endpoint для разложения
+      if (isParentTask) {
+        response = await fetch(`${API}/tasks/decompose?external_id=${currentUser.id}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(taskData),
+        });
+      } else {
+        // Обычная задача
+        response = await fetch(`${API}/tasks/create?external_id=${currentUser.id}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(taskData),
+        });
+      }
 
       if (response.ok) {
-        const newTask = await response.json();
-        setTasks(prev => [newTask.task, ...prev]);
+        const result = await response.json();
+        console.log("Task created successfully:", result);
+        await loadTasks(); // Перезагружаем задачи
+      } else {
+        const errorText = await response.text();
+        console.error("Server error:", response.status, errorText);
+        throw new Error(`Ошибка сервера: ${response.status}`);
       }
     } catch (error) {
       console.error("Error creating task:", error);
+      alert(`Ошибка при создании задачи: ${error.message}`);
     }
   };
 
@@ -1785,72 +2240,72 @@ export default function App() {
       });
 
       if (response.ok) {
-        setTasks(prev => prev.map(task => 
-          task.id === taskId ? { ...task, status: 'done' } : task
-        ));
+        await loadTasks(); // Перезагружаем задачи после завершения
+      } else {
+        console.error("Failed to complete task:", response.status);
       }
     } catch (error) {
       console.error("Error completing task:", error);
     }
   };
 
+  const handleAddTaskWithDate = (date = null) => {
+    setSelectedDateForTask(date);
+    setShowAddTask(true);
+  };
+
   useEffect(() => {
     const savedUser = localStorage.getItem("taskbot_user");
     if (savedUser) {
-      const userData = JSON.parse(savedUser);
-      setCurrentUser({ 
-        ...userData, 
-        name: 'Пользователь' 
-      });
+      try {
+        const userData = JSON.parse(savedUser);
+        setCurrentUser({ 
+          ...userData, 
+          name: userData.name || 'Пользователь' 
+        });
+      } catch (error) {
+        console.error("Error parsing saved user:", error);
+        localStorage.removeItem("taskbot_user");
+      }
     }
   }, []);
 
-  const renderNavigation = () => (
-    <div className="flex overflow-x-auto space-x-1 bg-slate-700 p-1 rounded-xl border border-slate-500 mb-6 scrollbar-hide">
-      {[
-        { id: 'tasks', label: 'Задачи' },
-        { id: 'calendar', label: 'Календарь' },
-        { id: 'pomodoro', label: 'Фокус' },
-        { id: 'profile', label: 'Профиль' },
-        { id: 'analysis', label: 'Анализ' },
-        { id: 'kanban', label: 'Канбан' }
-      ].map(tab => (
-        <button
-          key={tab.id}
-          onClick={() => setActiveTab(tab.id)}
-          className={`flex-1 py-3 px-4 rounded-lg text-sm font-medium transition-all duration-300 transform hover:scale-105 whitespace-nowrap ${
-            activeTab === tab.id 
-              ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow border border-blue-400/30' 
-              : 'text-slate-300 hover:text-white hover:bg-slate-600'
-          }`}
-        >
-          {tab.label}
-        </button>
-      ))}
-    </div>
-  );
+  // Добавим обработчик ошибок для всего приложения
+  useEffect(() => {
+    const handleError = (error) => {
+      console.error("Global error:", error);
+    };
+
+    window.addEventListener('error', handleError);
+    window.addEventListener('unhandledrejection', handleError);
+
+    return () => {
+      window.removeEventListener('error', handleError);
+      window.removeEventListener('unhandledrejection', handleError);
+    };
+  }, []);
 
   if (!currentUser) {
     return <LoginForm onLogin={handleLogin} />;
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-800 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-800 p-3 sm:p-4">
       <div className="max-w-6xl mx-auto">
         {/* Шапка */}
-        <header className="bg-slate-800 rounded-2xl p-6 shadow border border-slate-600 mb-6">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div className="flex items-center gap-4">
-              <div className="relative">
-                <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center shadow">
-                  <span className="text-white font-bold text-lg">
+        <header className="bg-slate-800 rounded-2xl p-4 sm:p-6 shadow border border-slate-600 mb-4 sm:mb-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
+            <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
+              <div className="relative flex-shrink-0">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center shadow">
+                  <span className="text-white font-bold text-base sm:text-lg">
                     {currentUser.name?.charAt(0)?.toUpperCase() || 'U'}
                   </span>
                 </div>
               </div>
-              <div>
-                <h1 className="text-xl font-bold text-white">Добро пожаловать, {currentUser.name}!</h1>
-                <p className="text-slate-300 text-sm">TaskFlow Pro - ваша система продуктивности</p>
+              <div className="min-w-0 flex-1">
+                <h1 className="text-lg sm:text-xl font-bold text-white truncate">Добро пожаловать, {currentUser.name}!</h1>
+                <p className="text-slate-300 text-xs sm:text-sm truncate">TaskFlow Pro - ваша система продуктивности</p>
                 {currentUser.maxUserId && (
                   <p className="text-blue-400 text-xs mt-1">Синхронизировано с ботом MAX</p>
                 )}
@@ -1858,7 +2313,7 @@ export default function App() {
             </div>
             <button
               onClick={handleLogout}
-              className="px-6 py-2 bg-slate-700 border border-slate-500 text-white rounded-xl hover:bg-slate-600 transition-all duration-300 transform hover:scale-105 w-full sm:w-auto"
+              className="w-full sm:w-auto px-4 py-2 bg-slate-700 border border-slate-500 text-white rounded-xl hover:bg-slate-600 transition-all duration-300 transform hover:scale-105 text-sm sm:text-base mt-2 sm:mt-0 min-h-[44px]"
             >
               Выйти
             </button>
@@ -1866,14 +2321,14 @@ export default function App() {
         </header>
 
         {/* Навигация */}
-        {renderNavigation()}
+        <MobileNavigation activeTab={activeTab} setActiveTab={setActiveTab} />
 
         {/* Основной контент */}
-        <main className="bg-slate-800 rounded-2xl p-6 shadow border border-slate-600">
+        <main className="bg-slate-800 rounded-2xl p-4 sm:p-6 shadow border border-slate-600">
           {loading ? (
-            <div className="flex justify-center items-center py-12">
-              <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-              <span className="ml-3 text-white">Загрузка...</span>
+            <div className="flex justify-center items-center py-8 sm:py-12">
+              <div className="w-6 h-6 sm:w-8 sm:h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+              <span className="ml-2 sm:ml-3 text-white text-sm sm:text-base">Загрузка...</span>
             </div>
           ) : (
             <div className="text-white">
@@ -1881,14 +2336,15 @@ export default function App() {
                 <TaskList 
                   tasks={tasks} 
                   onComplete={handleCompleteTask}
-                  onAddTask={() => setShowAddTask(true)}
+                  onAddTask={() => handleAddTaskWithDate()}
                   currentUser={currentUser}
+                  onTaskUpdate={loadTasks}
                 />
               )}
               {activeTab === 'calendar' && (
                 <EnergyCalendar 
                   tasks={tasks}
-                  onAddTask={() => setShowAddTask(true)}
+                  onAddTask={handleAddTaskWithDate}
                 />
               )}
               {activeTab === 'pomodoro' && (
@@ -1917,11 +2373,14 @@ export default function App() {
         {showAddTask && (
           <AddTaskModal
             onAdd={handleAddTask}
-            onClose={() => setShowAddTask(false)}
+            onClose={() => {
+              setShowAddTask(false);
+              setSelectedDateForTask(null);
+            }}
+            selectedDate={selectedDateForTask}
           />
         )}
       </div>
     </div>
   );
-
 }
