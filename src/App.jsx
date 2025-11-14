@@ -2,109 +2,189 @@ import React, { useEffect, useState } from "react";
 
 const API = "http://localhost:8000";
 
-// MAX Bridge интеграция
-function MaxBridgeIntegration({ onLogin }) {
-  const [loading, setLoading] = useState(true);
+
+function LoginForm({ onLogin }) {
+  const [maxUserId, setMaxUserId] = useState("");
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [realUserId, setRealUserId] = useState(null);
 
+  // Получаем РЕАЛЬНЫЙ ID пользователя из MAX
   useEffect(() => {
-    const initializeMaxBridge = async () => {
-      try {
-        // Проверяем, запущено ли в MAX
-        if (window.WebApp) {
-          console.log("🌐 MAX Bridge detected:", window.WebApp);
-          
-          // Получаем данные пользователя из MAX
-          const initData = window.WebApp.initDataUnsafe;
-          console.log("👤 MAX User data:", initData);
+    const findRealUserId = () => {
+      // Способ 1: Ищем в URL параметрах
+      const urlParams = new URLSearchParams(window.location.search);
+      console.log("📋 Все URL параметры:", Object.fromEntries(urlParams));
 
-          if (initData && initData.user) {
-            const maxUser = initData.user;
-            const externalId = `max_${maxUser.id}`;
-            
-            try {
-              // Проверяем существование пользователя в нашей системе
-              const userResponse = await fetch(`${API}/user/sync-with-bot`, {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                  max_user_id: maxUser.id.toString(),
-                  username: maxUser.username || `${maxUser.first_name} ${maxUser.last_name}`.trim() || 'MAX User'
-                }),
-              });
-
-              if (userResponse.ok) {
-                const userData = await userResponse.json();
-                
-                // Автоматический вход
-                onLogin(
-                  userData.external_id || externalId,
-                  maxUser.first_name || 'MAX User',
-                  maxUser.id.toString()
-                );
-              } else {
-                throw new Error("Failed to sync user with bot");
-              }
-              
-            } catch (syncError) {
-              console.error("Sync error:", syncError);
-              // Пробуем получить профиль напрямую
-              const profileResponse = await fetch(`${API}/user/profile?external_id=${externalId}`);
-              
-              if (profileResponse.ok) {
-                const profileData = await profileResponse.json();
-                onLogin(externalId, profileData.name, maxUser.id.toString());
-              } else {
-                // Создаем нового пользователя
-                const createResponse = await fetch(`${API}/user/create?external_id=${externalId}&name=${encodeURIComponent(maxUser.first_name || 'MAX User')}`);
-                
-                if (createResponse.ok) {
-                  onLogin(externalId, maxUser.first_name || 'MAX User', maxUser.id.toString());
-                } else {
-                  throw new Error("Failed to create user");
-                }
-              }
+      // MAX обычно передает данные в tgWebAppData или initData
+      const initData = urlParams.get('tgWebAppData') || urlParams.get('initData');
+      if (initData) {
+        console.log("🔍 InitData found:", initData);
+        try {
+          // Парсим initData
+          const params = new URLSearchParams(initData);
+          const userJson = params.get('user');
+          if (userJson) {
+            const user = JSON.parse(decodeURIComponent(userJson));
+            if (user && user.id) {
+              console.log("✅ Real user ID found:", user.id);
+              setRealUserId(user.id.toString());
+              return;
             }
-          } else {
-            setError("Не удалось получить данные пользователя из MAX");
           }
+        } catch (e) {
+          console.error("Error parsing initData:", e);
+        }
+      }
+
+      // Способ 2: Пробуем через window.TelegramWebApp
+      if (window.TelegramWebApp && window.TelegramWebApp.initDataUnsafe) {
+        const user = window.TelegramWebApp.initDataUnsafe.user;
+        if (user && user.id) {
+          console.log("✅ Real user ID from TelegramWebApp:", user.id);
+          setRealUserId(user.id.toString());
+          return;
+        }
+      }
+
+      // Способ 3: Пробуем через window.MAX
+      if (window.MAX && window.MAX.initData) {
+        console.log("🔍 MAX initData:", window.MAX.initData);
+        // Парсим initData MAX
+      }
+
+      console.log("❌ Could not find real user ID");
+      setRealUserId("NOT_FOUND");
+    };
+
+    findRealUserId();
+  }, []);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!realUserId || realUserId === "NOT_FOUND") {
+      setError("❌ Не удалось определить ваш аккаунт. Откройте приложение через MAX.");
+      return;
+    }
+
+    if (maxUserId.trim()) {
+      setLoading(true);
+      setError("");
+
+      try {
+        // СТРОГАЯ ПРОВЕРКА: введенный ID должен совпадать с РЕАЛЬНЫМ ID из MAX
+        console.log(`🔍 Comparing: entered=${maxUserId}, real=${realUserId}`);
+
+        if (maxUserId !== realUserId) {
+          setError(`❌ Доступ запрещен! Это не ваш аккаунт.`);
+          setLoading(false);
+          return;
+        }
+
+        // Дополнительно проверяем что пользователь есть в базе
+        const userResponse = await fetch(`${API}/user/profile?external_id=max_${maxUserId}`);
+
+        if (userResponse.ok) {
+          const userData = await userResponse.json();
+          onLogin(`max_${maxUserId}`, userData.name, maxUserId);
         } else {
-          setError("Приложение запущено вне MAX");
+          setError("❌ Пользователь с таким ID не найден. Начните с бота в MAX!");
         }
       } catch (error) {
-        console.error("MAX Bridge initialization error:", error);
-        setError("Ошибка инициализации MAX Bridge");
+        setError("❌ Ошибка подключения к серверу");
       } finally {
         setLoading(false);
       }
-    };
+    }
+  };
 
-    initializeMaxBridge();
-  }, [onLogin]);
+  // Автозаполнение когда получили реальный ID
+  useEffect(() => {
+    if (realUserId && realUserId !== "NOT_FOUND") {
+      setMaxUserId(realUserId);
+    }
+  }, [realUserId]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-800 flex items-center justify-center p-4">
-        <div className="bg-slate-800 rounded-2xl p-8 shadow-2xl border border-slate-600 w-full max-w-md mx-4 text-center">
-          <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center shadow-lg mx-auto mb-4">
-            <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-800 flex items-center justify-center p-4">
+      <div className="bg-slate-800 rounded-2xl p-6 sm:p-8 shadow-2xl border border-slate-600 w-full max-w-md mx-4">
+        <div className="text-center mb-6 sm:mb-8">
+          <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center shadow-lg mx-auto mb-3 sm:mb-4">
+            <svg className="w-6 h-6 sm:w-8 sm:h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
           </div>
-          <h3 className="text-xl font-bold text-white mb-2">Подключение к MAX</h3>
-          <p className="text-slate-300">Инициализация автоматического входа...</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-white mb-2">TaskFlow Pro</h1>
+          <p className="text-slate-300 text-sm">Вход по вашему ID из MAX</p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-2 sm:mb-3">
+              Ваш уникальный ID из MAX
+            </label>
+            <div className="relative">
+              <input
+                type="text"
+                value={maxUserId}
+                onChange={(e) => setMaxUserId(e.target.value.replace(/\D/g, ''))}
+                className="w-full p-3 sm:p-4 bg-slate-700 border border-slate-500 rounded-xl text-white placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-base"
+                placeholder="Введите цифровой ID"
+                required
+              />
+              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                <div className="bg-blue-500/20 text-blue-300 px-2 py-1 rounded text-xs font-mono">
+                  ID
+                </div>
+              </div>
+            </div>
+            <p className="text-xs text-slate-400 mt-2">
+              💡 ID можно получить в боте MAX командой /start
+            </p>
+          </div>
+
+          {error && (
+            <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 sm:p-4">
+              <div className="flex items-center space-x-2 text-red-300">
+                <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span className="text-sm">{error}</span>
+              </div>
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={loading || !maxUserId.trim()}
+            className="w-full bg-gradient-to-r from-blue-500 to-purple-500 text-white py-3 sm:py-4 rounded-xl hover:from-blue-600 hover:to-purple-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105 font-semibold shadow-lg border border-blue-400/30 text-base min-h-[44px]"
+          >
+            {loading ? (
+              <div className="flex items-center justify-center space-x-2">
+                <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                <span>Проверка доступа...</span>
+              </div>
+            ) : (
+              "Войти в систему"
+            )}
+          </button>
+        </form>
+
+        <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-slate-700/50 rounded-xl border border-slate-600">
+          <div className="flex items-start space-x-2">
+            <svg className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div className="text-xs text-slate-300">
+              <p className="font-medium">Безопасный вход</p>
+              <p>Система проверяет что введенный ID соответствует вашему аккаунту в базе.</p>
+            </div>
+          </div>
         </div>
       </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <LoginForm onLogin={onLogin} />
-    );
-  }
-
-  return null;
+    </div>
+  );
 }
 
 function MobileNavigation({ activeTab, setActiveTab }) {
@@ -114,9 +194,9 @@ function MobileNavigation({ activeTab, setActiveTab }) {
     { id: 'tasks', label: 'Задачи', icon: '📝' },
     { id: 'calendar', label: 'Календарь', icon: '📅' },
     { id: 'pomodoro', label: 'Фокус', icon: '⏱️' },
-    { id: 'profile', label: 'Профиль', icon: '👤' },
+    { id: 'kanban', label: 'Канбан', icon: '📋' },
     { id: 'analysis', label: 'Анализ', icon: '📊' },
-    { id: 'kanban', label: 'Канбан', icon: '📋' }
+    { id: 'profile', label: 'Профиль', icon: '👤' }
   ];
 
   return (
@@ -2131,13 +2211,11 @@ export default function App() {
   const [selectedDateForTask, setSelectedDateForTask] = useState(null);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('tasks');
-  const [maxBridgeInitialized, setMaxBridgeInitialized] = useState(false);
 
   useEffect(() => {
-  if (!currentUser) {
-    // Пробуем автоматический вход через MAX Bridge
-    return <MaxBridgeIntegration onLogin={handleLogin} />;
-  }
+    if (currentUser && tasks.length === 0) {
+      loadTasks();
+    }
   }, [currentUser]);
 
   const loadTasks = async () => {
@@ -2159,7 +2237,7 @@ export default function App() {
     }
   };
 
-    const handleLogin = (userId, userName, maxUserId) => {
+  const handleLogin = (userId, userName, maxUserId) => {
     setCurrentUser({ 
       id: userId, 
       name: userName || 'Пользователь', 
@@ -2170,48 +2248,6 @@ export default function App() {
       maxUserId 
     }));
   };
-
-  // Проверяем MAX Bridge при загрузке
-  useEffect(() => {
-    if (window.WebApp && !maxBridgeInitialized) {
-      console.log("🚀 MAX Bridge доступен");
-      setMaxBridgeInitialized(true);
-      
-      // Сообщаем MAX, что приложение готово
-      window.WebApp.ready();
-      
-      // Настраиваем кнопку "Назад"
-      window.WebApp.BackButton.onClick(() => {
-        if (activeTab !== 'tasks') {
-          setActiveTab('tasks');
-        } else {
-          window.WebApp.close();
-        }
-      });
-      
-      // Показываем кнопку "Назад"
-      window.WebApp.BackButton.show();
-    }
-  }, [maxBridgeInitialized, activeTab]);
-
-  useEffect(() => {
-  const handleBackButton = () => {
-    if (activeTab !== 'tasks') {
-      setActiveTab('tasks');
-      return false; // Предотвращаем закрытие
-    }
-    return true; // Разрешаем закрытие
-  };
-
-  if (window.WebApp) {
-    // Подписываемся на события
-    window.WebApp.onEvent('backButtonPressed', handleBackButton);
-    
-    return () => {
-      window.WebApp.offEvent('backButtonPressed', handleBackButton);
-    };
-  }
-}, [activeTab]);
 
   const handleLogout = () => {
     setCurrentUser(null);
