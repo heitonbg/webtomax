@@ -1236,9 +1236,7 @@ function UserProfile({ tasks, currentUser }) {
   );
 }
 
-// ежедневный анализ 
-import { useState, useEffect } from 'react';
-
+// ежедневный анализ
 function DailyAnalysis({ tasks, userId }) {
   const [analysis, setAnalysis] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -2645,3 +2643,4 @@ export default function App() {
 
 
 }
+
