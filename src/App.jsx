@@ -7,22 +7,53 @@ function LoginForm({ onLogin }) {
   const [maxUserId, setMaxUserId] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [realMaxUserId, setRealMaxUserId] = useState(null);
+
+  // Получаем реальный ID пользователя из MAX
+  useEffect(() => {
+    const getRealUserId = async () => {
+      try {
+        // MAX Web App API для получения реального ID
+        if (window.MaxWebApp && window.MaxWebApp.getUser) {
+          const user = await window.MaxWebApp.getUser();
+          console.log("MAX User:", user);
+          if (user && user.id) {
+            setRealMaxUserId(user.id.toString());
+          }
+        }
+      } catch (error) {
+        console.error("Error getting MAX user ID:", error);
+      }
+    };
+
+    getRealUserId();
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!realMaxUserId) {
+      setError("❌ Не удалось определить ваш аккаунт MAX. Откройте приложение через MAX.");
+      return;
+    }
+
     if (maxUserId.trim()) {
       setLoading(true);
       setError("");
 
       try {
-        // ПРОВЕРЯЕМ: существует ли пользователь с таким ID в базе
+        // СТРОГАЯ ПРОВЕРКА: введенный ID должен совпадать с реальным ID из MAX
+        if (maxUserId !== realMaxUserId) {
+          setError(`❌ Доступ запрещен! Это не ваш аккаунт. Ваш ID: ${realMaxUserId}`);
+          setLoading(false);
+          return;
+        }
+
+        // Дополнительно проверяем что пользователь есть в базе
         const userResponse = await fetch(`${API}/user/profile?external_id=max_${maxUserId}`);
 
         if (userResponse.ok) {
           const userData = await userResponse.json();
-
-          // ДОПОЛНИТЕЛЬНАЯ ПРОВЕРКА: убедимся что это тот же пользователь
-          // Если нужно строже - можно добавить проверку по имени или другим данным
           onLogin(`max_${maxUserId}`, userData.name, maxUserId);
         } else {
           setError("❌ Пользователь с таким ID не найден. Начните с бота в MAX!");
@@ -35,6 +66,13 @@ function LoginForm({ onLogin }) {
     }
   };
 
+  // Автозаполнение когда получили реальный ID
+  useEffect(() => {
+    if (realMaxUserId) {
+      setMaxUserId(realMaxUserId);
+    }
+  }, [realMaxUserId]);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-800 flex items-center justify-center p-4">
       <div className="bg-slate-800 rounded-2xl p-6 sm:p-8 shadow-2xl border border-slate-600 w-full max-w-md mx-4">
@@ -45,13 +83,15 @@ function LoginForm({ onLogin }) {
             </svg>
           </div>
           <h1 className="text-xl sm:text-2xl font-bold text-white mb-2">TaskFlow Pro</h1>
-          <p className="text-slate-300 text-sm">Вход по вашему ID из MAX</p>
+          <p className="text-slate-300 text-sm">
+            {realMaxUserId ? `Ваш ID: ${realMaxUserId}` : "Определяем ваш аккаунт..."}
+          </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2 sm:mb-3">
-              Ваш уникальный ID из MAX
+              Подтвердите ваш ID
             </label>
             <div className="relative">
               <input
@@ -59,8 +99,9 @@ function LoginForm({ onLogin }) {
                 value={maxUserId}
                 onChange={(e) => setMaxUserId(e.target.value.replace(/\D/g, ''))}
                 className="w-full p-3 sm:p-4 bg-slate-700 border border-slate-500 rounded-xl text-white placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-base"
-                placeholder="Введите цифровой ID"
+                placeholder={realMaxUserId || "Определяем ID..."}
                 required
+                disabled={!realMaxUserId}
               />
               <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
                 <div className="bg-blue-500/20 text-blue-300 px-2 py-1 rounded text-xs font-mono">
@@ -68,9 +109,11 @@ function LoginForm({ onLogin }) {
                 </div>
               </div>
             </div>
-            <p className="text-xs text-slate-400 mt-2">
-              💡 ID можно получить в боте MAX командой /start
-            </p>
+            {realMaxUserId && (
+              <p className="text-xs text-green-400 mt-2">
+                ✓ ID определен системой MAX
+              </p>
+            )}
           </div>
 
           {error && (
@@ -86,7 +129,7 @@ function LoginForm({ onLogin }) {
 
           <button
             type="submit"
-            disabled={loading || !maxUserId.trim()}
+            disabled={loading || !maxUserId.trim() || !realMaxUserId}
             className="w-full bg-gradient-to-r from-blue-500 to-purple-500 text-white py-3 sm:py-4 rounded-xl hover:from-blue-600 hover:to-purple-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105 font-semibold shadow-lg border border-blue-400/30 text-base min-h-[44px]"
           >
             {loading ? (
@@ -95,19 +138,19 @@ function LoginForm({ onLogin }) {
                 <span>Проверка доступа...</span>
               </div>
             ) : (
-              "Войти в систему"
+              "Подтвердить и войти"
             )}
           </button>
         </form>
 
         <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-slate-700/50 rounded-xl border border-slate-600">
           <div className="flex items-start space-x-2">
-            <svg className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <svg className="w-4 h-4 sm:w-5 sm:h-5 text-green-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
             </svg>
             <div className="text-xs text-slate-300">
-              <p className="font-medium">Как получить ID?</p>
-              <p>1. Откройте бота в MAX → 2. Напишите /start → 3. Скопируйте ваш ID</p>
+              <p className="font-medium">Защищенный вход</p>
+              <p>Система определила ваш аккаунт MAX. Вход только для вас.</p>
             </div>
           </div>
         </div>
