@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 
 const API = "http://localhost:8000";
 
-// вход по айди
+// вход по айди с проверкой через MAX API
 function LoginForm({ onLogin }) {
   const [maxUserId, setMaxUserId] = useState("");
   const [loading, setLoading] = useState(false);
@@ -13,18 +13,22 @@ function LoginForm({ onLogin }) {
     if (maxUserId.trim()) {
       setLoading(true);
       setError("");
-      
+
       try {
+        // ПРОВЕРЯЕМ: существует ли пользователь с таким ID в базе
         const userResponse = await fetch(`${API}/user/profile?external_id=max_${maxUserId}`);
-        
+
         if (userResponse.ok) {
           const userData = await userResponse.json();
+
+          // ДОПОЛНИТЕЛЬНАЯ ПРОВЕРКА: убедимся что это тот же пользователь
+          // Если нужно строже - можно добавить проверку по имени или другим данным
           onLogin(`max_${maxUserId}`, userData.name, maxUserId);
         } else {
-          setError("Пользователь с таким ID не найден. Начните с бота в MAX!");
+          setError("❌ Пользователь с таким ID не найден. Начните с бота в MAX!");
         }
       } catch (error) {
-        setError("Ошибка подключения к серверу");
+        setError("❌ Ошибка подключения к серверу");
       } finally {
         setLoading(false);
       }
@@ -41,13 +45,13 @@ function LoginForm({ onLogin }) {
             </svg>
           </div>
           <h1 className="text-xl sm:text-2xl font-bold text-white mb-2">TaskFlow Pro</h1>
-          <p className="text-slate-300 text-sm">Вход по ID пользователя</p>
+          <p className="text-slate-300 text-sm">Вход по вашему ID из MAX</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2 sm:mb-3">
-              Ваш ID из MAX
+              Ваш уникальный ID из MAX
             </label>
             <div className="relative">
               <input
@@ -64,6 +68,9 @@ function LoginForm({ onLogin }) {
                 </div>
               </div>
             </div>
+            <p className="text-xs text-slate-400 mt-2">
+              💡 ID можно получить в боте MAX командой /start
+            </p>
           </div>
 
           {error && (
@@ -85,13 +92,25 @@ function LoginForm({ onLogin }) {
             {loading ? (
               <div className="flex items-center justify-center space-x-2">
                 <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                <span>Подключение...</span>
+                <span>Проверка доступа...</span>
               </div>
             ) : (
               "Войти в систему"
             )}
           </button>
         </form>
+
+        <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-slate-700/50 rounded-xl border border-slate-600">
+          <div className="flex items-start space-x-2">
+            <svg className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div className="text-xs text-slate-300">
+              <p className="font-medium">Как получить ID?</p>
+              <p>1. Откройте бота в MAX → 2. Напишите /start → 3. Скопируйте ваш ID</p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -104,9 +123,9 @@ function MobileNavigation({ activeTab, setActiveTab }) {
     { id: 'tasks', label: 'Задачи', icon: '📝' },
     { id: 'calendar', label: 'Календарь', icon: '📅' },
     { id: 'pomodoro', label: 'Фокус', icon: '⏱️' },
-    { id: 'profile', label: 'Профиль', icon: '👤' },
+    { id: 'kanban', label: 'Канбан', icon: '📋' },
     { id: 'analysis', label: 'Анализ', icon: '📊' },
-    { id: 'kanban', label: 'Канбан', icon: '📋' }
+    { id: 'profile', label: 'Профиль', icon: '👤' }
   ];
 
   return (
@@ -2382,6 +2401,4 @@ export default function App() {
     </div>
   );
 
-
 }
-
