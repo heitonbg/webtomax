@@ -2278,14 +2278,6 @@ export default function App() {
     setTimeout(() => checkMaxEnvironment(), 1000);
   };
 
-  const handleLogout = () => {
-    setCurrentUser(null);
-    setTasks([]);
-    localStorage.removeItem("taskbot_user");
-    setAuthState('checking');
-    setTimeout(() => checkMaxEnvironment(), 500);
-  };
-
   // Добавление задач
   const handleAddTask = async (title, minutes, difficulty, taskDate = null, isParentTask = false) => {
     if (!currentUser) {
@@ -2433,18 +2425,12 @@ export default function App() {
               </div>
               <div className="min-w-0 flex-1">
                 <h1 className="text-lg sm:text-xl font-bold text-white truncate">Добро пожаловать, {currentUser.name}!</h1>
-                <p className="text-slate-300 text-xs sm:text-sm truncate">TaskFlow Pro - ваша система продуктивности</p>
+                <p className="text-slate-300 text-xs sm:text-sm truncate">LevelUp - ваша система продуктивности</p>
                 {currentUser.maxUserId && (
                   <p className="text-blue-400 text-xs mt-1">Синхронизировано с MAX • ID: {currentUser.maxUserId}</p>
                 )}
               </div>
             </div>
-            <button
-              onClick={handleLogout}
-              className="w-full sm:w-auto px-4 py-2 bg-slate-700 border border-slate-500 text-white rounded-xl hover:bg-slate-600 transition-all duration-300 transform hover:scale-105 text-sm sm:text-base mt-2 sm:mt-0 min-h-[44px]"
-            >
-              Выйти
-            </button>
           </div>
         </header>
 
@@ -2512,4 +2498,5 @@ export default function App() {
     </div>
   );
 }
+
 
