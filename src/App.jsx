@@ -1272,7 +1272,7 @@ function DailyAnalysis({ tasks, currentUser }) {
   const generateFallbackAnalytics = (tasks) => {
   const today = new Date().toDateString();
   const todayTasks = tasks.filter(task => {
-    const taskDate = new Date(task.created_at).toDateString();
+    const taskDate = new Date(task.task_date || task.created_at).toDateString();
     return taskDate === today;
   });
   
@@ -1281,11 +1281,21 @@ function DailyAnalysis({ tasks, currentUser }) {
   const totalToday = todayTasks.length;
   const efficiency = totalToday > 0 ? Math.round((completedToday / totalToday) * 100) : 0;
 
+  // Расчет времени
+  const totalMinutes = todayTasks.reduce((sum, task) => sum + (task.estimated_minutes || 0), 0);
+  const completedMinutes = todayTasks
+    .filter(t => t.status === 'done')
+    .reduce((sum, task) => sum + (task.estimated_minutes || 0), 0);
+  const timeUtilization = totalMinutes > 0 ? Math.round((completedMinutes / totalMinutes) * 100) : 0;
+
   return {
     completed_today: completedToday,
     pending_today: pendingToday,
     total_today: totalToday,
     efficiency_rate: efficiency,
+    total_minutes: totalMinutes,
+    completed_minutes: completedMinutes,
+    time_utilization: timeUtilization,
     ai_analysis: {
       productivity_score: efficiency,
       insights: [
@@ -1293,12 +1303,11 @@ function DailyAnalysis({ tasks, currentUser }) {
         completedToday >= pendingToday ? "Отличный старт дня! Продолжайте в том же духе!" :
         "Сосредоточьтесь на завершении начатых задач",
         totalToday === 0 ? "Добавьте задачи для анализа продуктивности" :
-        `Завершено ${completedToday} из ${totalToday} задач`
+        `Завершено ${completedToday} из ${totalToday} задач (${efficiency}%)`
       ],
       recommendations: [
         "Используйте технику Pomodoro для лучшей концентрации",
-        "Начните с самых сложных задач утром",
-        totalToday === 0 ? "Добавьте первую задачу чтобы начать" :
+        totalMinutes > 0 ? `Запланировано ${Math.round(totalMinutes/60)}ч работы` : "Добавьте оценку времени к задачам",
         "Делайте регулярные перерывы для поддержания продуктивности"
       ],
       energy_level: efficiency >= 80 ? "high" : efficiency >= 50 ? "medium" : "low",
@@ -2616,5 +2625,6 @@ export default function App() {
     </div>
   );
 }
+
 
 
