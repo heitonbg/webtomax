@@ -1236,155 +1236,313 @@ function UserProfile({ tasks, currentUser }) {
 }
 
 // Ежедневный анализ
-function DailyAnalysis({ tasks }) {
-  const today = new Date().toDateString();
-  const todayTasks = tasks.filter(task => {
-    const taskDate = new Date(task.task_date).toDateString();
-    return taskDate === today;
-  });
-  const completedToday = todayTasks.filter(t => t.status === 'done').length;
-  const pendingToday = todayTasks.filter(t => t.status !== 'done').length;
+function DailyAnalysis({ tasks, userId }) {
+  const [analysis, setAnalysis] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const getMotivation = () => {
+  // Функция для получения AI-аналитики
+  const fetchAIAnalysis = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await fetch(`/api/user/ai-analytics?external_id=${userId}`);
+
+      if (!response.ok) {
+        throw new Error('Ошибка загрузки аналитики');
+      }
+
+      const data = await response.json();
+      setAnalysis(data.ai_analysis);
+
+    } catch (err) {
+      console.error('Error fetching AI analysis:', err);
+      setError(err.message);
+      // Fallback на локальную аналитику если AI недоступен
+      generateFallbackAnalysis();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fallback анализ если AI недоступен
+  const generateFallbackAnalysis = () => {
+    const today = new Date().toDateString();
+    const todayTasks = tasks.filter(task => {
+      const taskDate = new Date(task.task_date).toDateString();
+      return taskDate === today;
+    });
+
+    const completedToday = todayTasks.filter(t => t.status === 'done').length;
+    const pendingToday = todayTasks.filter(t => t.status !== 'done').length;
+    const completionRate = todayTasks.length ? (completedToday / todayTasks.length) : 0;
+
+    let mood = 'neutral';
+    let insights = [];
+    let recommendations = [];
+
     if (completedToday === 0 && pendingToday === 0) {
-      return { 
-        message: 'Начните свой продуктивный день!', 
-        emoji: '🎯',
-        type: 'neutral',
-        color: 'from-blue-500/10 to-purple-500/10 border-blue-500/30'
-      };
+      mood = 'neutral';
+      insights = ['Сегодня еще нет активных задач'];
+      recommendations = ['Начните с маленькой задачи чтобы запустить продуктивность'];
+    } else if (completionRate >= 0.8) {
+      mood = 'excellent';
+      insights = ['Вы сегодня невероятно продуктивны! 🚀', 'Отличный темп выполнения задач'];
+      recommendations = ['Пора ставить новые амбициозные цели', 'Поделитесь своим секретом продуктивности!'];
+    } else if (completionRate >= 0.6) {
+      mood = 'good';
+      insights = ['Стабильный прогресс!', 'Хороший баланс между сложными и простыми задачами'];
+      recommendations = ['Продолжайте в том же духе', 'Попробуйте планировать задачи на завтра'];
+    } else if (completionRate >= 0.3) {
+      mood = 'moderate';
+      insights = ['Есть прогресс, но можно лучше', 'Некоторые задачи требуют больше внимания'];
+      recommendations = ['Сосредоточьтесь на завершении начатых задач', 'Используйте технику Pomodoro'];
+    } else {
+      mood = 'needs_improvement';
+      insights = ['Сегодня был сложный день', 'Не все запланированное удалось выполнить'];
+      recommendations = ['Начните завтра с самой простой задачи', 'Разбейте большие задачи на мелкие шаги'];
     }
-    if (completedToday >= pendingToday * 2) {
-      return { 
-        message: 'Отличная работа! Вы сегодня на высоте! 🔥', 
+
+    setAnalysis({
+      mood,
+      productivity_score: Math.round(completionRate * 100),
+      energy_efficiency: Math.round(completionRate * 100),
+      insights,
+      recommendations,
+      focus_areas: pendingToday > completedToday ? ['Завершение начатых задач'] : ['Поддержание темпа']
+    });
+  };
+
+  // Загружаем аналитику при монтировании
+  useEffect(() => {
+    fetchAIAnalysis();
+  }, [tasks, userId]);
+
+  // Функции для стилей в зависимости от настроения
+  const getMoodConfig = () => {
+    if (!analysis) return {};
+
+    const configs = {
+      excellent: {
+        color: 'from-green-500/20 to-emerald-600/20 border-green-400/40',
         emoji: '🎉',
-        type: 'praise',
-        color: 'from-green-500/10 to-emerald-500/10 border-green-500/30'
-      };
-    }
-    if (completedToday > pendingToday) {
-      return { 
-        message: 'Хороший прогресс! Продолжайте в том же духе!', 
+        title: 'Идеальный день!'
+      },
+      good: {
+        color: 'from-blue-500/20 to-cyan-600/20 border-blue-400/40',
         emoji: '🚀',
-        type: 'encouragement',
-        color: 'from-yellow-500/10 to-amber-500/10 border-yellow-500/30'
-      };
-    }
-    if (completedToday > 0) {
-      return { 
-        message: 'Есть над чем поработать! Не сдавайтесь! 💪', 
+        title: 'Отличная работа!'
+      },
+      moderate: {
+        color: 'from-yellow-500/20 to-amber-600/20 border-yellow-400/40',
+        emoji: '💪',
+        title: 'Хороший старт!'
+      },
+      needs_improvement: {
+        color: 'from-orange-500/20 to-red-600/20 border-orange-400/40',
         emoji: '📈',
-        type: 'warning',
-        color: 'from-orange-500/10 to-red-500/10 border-orange-500/30'
-      };
-    }
-    return { 
-      message: 'Время взяться за дела! Начните с малого!', 
-      emoji: '⚡',
-      type: 'motivation',
-      color: 'from-purple-500/10 to-pink-500/10 border-purple-500/30'
+        title: 'Есть над чем поработать'
+      },
+      neutral: {
+        color: 'from-purple-500/20 to-pink-600/20 border-purple-400/40',
+        emoji: '🎯',
+        title: 'Начните свой день!'
+      }
+    };
+
+    return configs[analysis.mood] || configs.neutral;
+  };
+
+  // Базовая статистика для отображения
+  const getBasicStats = () => {
+    const today = new Date().toDateString();
+    const todayTasks = tasks.filter(task => {
+      const taskDate = new Date(task.task_date).toDateString();
+      return taskDate === today;
+    });
+
+    return {
+      total: todayTasks.length,
+      completed: todayTasks.filter(t => t.status === 'done').length,
+      pending: todayTasks.filter(t => t.status !== 'done').length,
+      totalMinutes: todayTasks.reduce((sum, task) => sum + task.estimated_minutes, 0)
     };
   };
 
-  const motivation = getMotivation();
+  const stats = getBasicStats();
+  const moodConfig = getMoodConfig();
 
-  const getProductivityTips = () => {
-    if (completedToday === 0) {
-      return [
-        'Начните с самой простой задачи - даже 5 минут работы лучше, чем ничего!',
-        'Используйте правило двух минут: если задача занимает меньше 2 минут, сделайте её сразу',
-        'Разбейте большую задачу на маленькие шаги'
-      ];
-    }
-    if (pendingToday > completedToday) {
-      return [
-        'Сосредоточьтесь на завершении начатых задач перед тем как брать новые',
-        'Используйте Pomodoro технику для лучшей концентрации',
-        'Определите самые важные задачи и выполните их в первую очередь'
-      ];
-    }
-    return [
-      'Отличный старт! Планируйте следующие задачи с учетом своего темпа',
-      'Не забывайте делать перерывы для поддержания продуктивности',
-      'Регулярно пересматривайте свои цели и прогресс'
-    ];
-  };
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="text-center">
+          <h2 className="text-xl font-bold text-white">Анализируем ваш день...</h2>
+          <p className="text-slate-300">Используем AI для глубокого анализа</p>
+        </div>
 
-  const tips = getProductivityTips();
+        <div className="bg-slate-800 rounded-2xl p-8 border border-slate-600 text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-slate-300">GigaChat анализирует вашу продуктивность</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-6 text-center">
+          <div className="text-2xl mb-2">⚠️</div>
+          <h3 className="text-red-300 font-bold mb-2">Ошибка загрузки аналитики</h3>
+          <p className="text-red-200 text-sm">{error}</p>
+          <button
+            onClick={fetchAIAnalysis}
+            className="mt-4 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm"
+          >
+            Попробовать снова
+          </button>
+        </div>
+
+        {/* Показываем fallback аналитику */}
+        {analysis && (
+          <div className={`bg-gradient-to-r ${moodConfig.color} rounded-2xl p-6 border`}>
+            <div className="text-center mb-4">
+              <div className="text-3xl mb-2">{moodConfig.emoji}</div>
+              <h3 className="text-xl font-bold text-white">{moodConfig.title}</h3>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4 mb-6">
+              <div className="bg-white/10 rounded-xl p-3 text-center backdrop-blur-sm">
+                <div className="text-lg font-bold text-white">{stats.total}</div>
+                <div className="text-white/80 text-xs">Всего</div>
+              </div>
+              <div className="bg-white/10 rounded-xl p-3 text-center backdrop-blur-sm">
+                <div className="text-lg font-bold text-white">{stats.completed}</div>
+                <div className="text-white/80 text-xs">Завершено</div>
+              </div>
+              <div className="bg-white/10 rounded-xl p-3 text-center backdrop-blur-sm">
+                <div className="text-lg font-bold text-white">{stats.pending}</div>
+                <div className="text-white/80 text-xs">В процессе</div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-4 sm:space-y-6">
-      <div className="text-center mb-6 sm:mb-8">
-        <h2 className="text-lg sm:text-xl font-bold text-white">Ежедневный анализ</h2>
-        <p className="text-slate-300 text-sm">Ваша продуктивность сегодня</p>
+    <div className="space-y-6">
+      {/* Заголовок */}
+      <div className="text-center">
+        <h2 className="text-xl font-bold text-white">AI Анализ дня</h2>
+        <p className="text-slate-300 text-sm">Умная аналитика от GigaChat</p>
       </div>
 
-      {/* Статистика */}
-      <div className={`bg-gradient-to-r ${motivation.color} rounded-2xl p-4 sm:p-8 text-center border`}>
-        <div className="text-3xl sm:text-4xl mb-3 sm:mb-4">{motivation.emoji}</div>
-        <div className="text-xl sm:text-2xl font-bold text-white mb-3 sm:mb-4">{motivation.message}</div>
-        
-        <div className="grid grid-cols-3 gap-2 sm:gap-4 max-w-md mx-auto">
-          <div className="bg-white/10 rounded-xl p-2 sm:p-4 backdrop-blur-sm">
-            <div className="text-lg sm:text-xl font-bold text-white">{todayTasks.length}</div>
-            <div className="text-white/80 text-xs sm:text-sm">Всего</div>
+      {/* Основная карточка с аналитикой */}
+      <div className={`bg-gradient-to-r ${moodConfig.color} rounded-2xl p-6 border`}>
+        <div className="text-center mb-6">
+          <div className="text-4xl mb-3">{moodConfig.emoji}</div>
+          <h3 className="text-2xl font-bold text-white mb-2">{moodConfig.title}</h3>
+          <p className="text-white/80">Оценка продуктивности: {analysis.productivity_score}%</p>
+        </div>
+
+        {/* Статистика */}
+        <div className="grid grid-cols-3 gap-4 mb-6">
+          <div className="bg-white/10 rounded-xl p-4 text-center backdrop-blur-sm">
+            <div className="text-xl font-bold text-white">{stats.total}</div>
+            <div className="text-white/80 text-sm">Всего задач</div>
           </div>
-          <div className="bg-white/10 rounded-xl p-2 sm:p-4 backdrop-blur-sm">
-            <div className="text-lg sm:text-xl font-bold text-white">{completedToday}</div>
-            <div className="text-white/80 text-xs sm:text-sm">Завершено</div>
+          <div className="bg-white/10 rounded-xl p-4 text-center backdrop-blur-sm">
+            <div className="text-xl font-bold text-white">{stats.completed}</div>
+            <div className="text-white/80 text-sm">Завершено</div>
           </div>
-          <div className="bg-white/10 rounded-xl p-2 sm:p-4 backdrop-blur-sm">
-            <div className="text-lg sm:text-xl font-bold text-white">{pendingToday}</div>
-            <div className="text-white/80 text-xs sm:text-sm">В процессе</div>
+          <div className="bg-white/10 rounded-xl p-4 text-center backdrop-blur-sm">
+            <div className="text-xl font-bold text-white">{stats.pending}</div>
+            <div className="text-white/80 text-sm">В процессе</div>
+          </div>
+        </div>
+
+        {/* Прогресс бар */}
+        <div className="mb-6">
+          <div className="flex justify-between text-sm text-white/80 mb-2">
+            <span>Прогресс выполнения</span>
+            <span>{analysis.productivity_score}%</span>
+          </div>
+          <div className="w-full bg-white/20 rounded-full h-2">
+            <div
+              className="bg-green-500 h-2 rounded-full transition-all duration-500"
+              style={{ width: `${analysis.productivity_score}%` }}
+            ></div>
           </div>
         </div>
       </div>
 
-      {/* Рекомендации */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-        <div className="bg-slate-700 rounded-xl p-4 sm:p-6 border border-slate-500">
-          <h3 className="text-base sm:text-lg font-bold text-white mb-3 sm:mb-4">💡 Советы на сегодня</h3>
-          <div className="space-y-2 sm:space-y-3">
-            {tips.map((tip, index) => (
-              <div key={index} className="flex items-start space-x-2 sm:space-x-3">
+      {/* Инсайты и рекомендации */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Ключевые инсайты */}
+        <div className="bg-slate-800 rounded-xl p-6 border border-slate-600">
+          <h3 className="text-lg font-bold text-white mb-4 flex items-center">
+            <span className="text-blue-400 mr-2">💡</span>
+            Ключевые инсайты
+          </h3>
+          <div className="space-y-3">
+            {analysis.insights.map((insight, index) => (
+              <div key={index} className="flex items-start space-x-3">
                 <div className="w-2 h-2 bg-blue-400 rounded-full mt-2 flex-shrink-0"></div>
-                <p className="text-slate-300 text-xs sm:text-sm">{tip}</p>
+                <p className="text-slate-300 text-sm leading-relaxed">{insight}</p>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="bg-slate-700 rounded-xl p-4 sm:p-6 border border-slate-500">
-          <h3 className="text-base sm:text-lg font-bold text-white mb-3 sm:mb-4">📊 Быстрая статистика</h3>
-          <div className="space-y-3 sm:space-y-4">
-            <div className="flex justify-between items-center">
-              <span className="text-slate-300 text-sm">Эффективность:</span>
-              <span className="text-blue-400 font-semibold text-sm">
-                {todayTasks.length ? Math.round((completedToday / todayTasks.length) * 100) : 0}%
-              </span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-slate-300 text-sm">Время работы:</span>
-              <span className="text-yellow-400 font-semibold text-sm">
-                {Math.round(todayTasks.reduce((sum, task) => sum + task.estimated_minutes, 0) / 60)}ч
-              </span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-slate-300 text-sm">Средняя сложность:</span>
-              <span className="text-purple-400 font-semibold text-sm">
-                {todayTasks.length ? Math.round(todayTasks.reduce((sum, task) => sum + task.difficulty, 0) / todayTasks.length) : 0}/5
-              </span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-slate-300 text-sm">Продуктивность:</span>
-              <span className={`font-semibold text-sm ${
-                completedToday >= pendingToday ? 'text-green-400' : 'text-orange-400'
-              }`}>
-                {completedToday >= pendingToday ? 'Высокая' : 'Можно лучше'}
-              </span>
-            </div>
+        {/* Рекомендации */}
+        <div className="bg-slate-800 rounded-xl p-6 border border-slate-600">
+          <h3 className="text-lg font-bold text-white mb-4 flex items-center">
+            <span className="text-green-400 mr-2">🎯</span>
+            Рекомендации
+          </h3>
+          <div className="space-y-3">
+            {analysis.recommendations.map((recommendation, index) => (
+              <div key={index} className="flex items-start space-x-3">
+                <div className="w-2 h-2 bg-green-400 rounded-full mt-2 flex-shrink-0"></div>
+                <p className="text-slate-300 text-sm leading-relaxed">{recommendation}</p>
+              </div>
+            ))}
           </div>
         </div>
+      </div>
+
+      {/* Области для улучшения */}
+      {analysis.focus_areas && analysis.focus_areas.length > 0 && (
+        <div className="bg-orange-500/10 rounded-xl p-6 border border-orange-500/30">
+          <h3 className="text-lg font-bold text-white mb-4 flex items-center">
+            <span className="text-orange-400 mr-2">📊</span>
+            Области для улучшения
+          </h3>
+          <div className="flex flex-wrap gap-2">
+            {analysis.focus_areas.map((area, index) => (
+              <span
+                key={index}
+                className="bg-orange-500/20 text-orange-300 px-3 py-1 rounded-full text-sm border border-orange-500/30"
+              >
+                {area}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Кнопка обновления */}
+      <div className="text-center">
+        <button
+          onClick={fetchAIAnalysis}
+          disabled={loading}
+          className="bg-blue-500 hover:bg-blue-600 disabled:bg-blue-500/50 text-white px-6 py-2 rounded-lg font-medium transition-colors"
+        >
+          {loading ? 'Обновляем...' : '🔄 Обновить анализ'}
+        </button>
       </div>
     </div>
   );
@@ -2498,4 +2656,5 @@ export default function App() {
     </div>
   );
 }
+
 
