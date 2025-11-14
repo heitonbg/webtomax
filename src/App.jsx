@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 
-const API = "https://servicebotformax-iwrawww.amvera.io";
+const API = "http://localhost:8000";
 
 
 // вход по айди - РЕАЛЬНАЯ ПРОВЕРКА ЧЕРЕЗ MAX API
