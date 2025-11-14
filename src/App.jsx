@@ -1235,41 +1235,42 @@ function UserProfile({ tasks, currentUser }) {
   );
 }
 
+// Ежедневный анализ с AI
 function DailyAnalysis({ tasks, currentUser }) {
-  const [aiAnalysis, setAiAnalysis] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [aiData, setAiData] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    loadAiAnalysis();
-  }, [tasks, currentUser]);
+    loadAiAnalytics();
+  }, [currentUser]);
 
-  const loadAiAnalysis = async () => {
-    if (!currentUser || tasks.length === 0) return;
+  const loadAiAnalytics = async () => {
+    if (!currentUser) return;
     
     setLoading(true);
     setError(null);
-    
     try {
       const response = await fetch(`${API}/user/ai-analytics?external_id=${currentUser.id}`);
-      
       if (response.ok) {
         const data = await response.json();
-        setAiAnalysis(data);
+        console.log("AI Analytics data:", data);
+        setAiData(data);
       } else {
-        throw new Error('Не удалось загрузить AI-анализ');
+        throw new Error("Failed to load AI analytics");
       }
-    } catch (err) {
-      console.error('Error loading AI analysis:', err);
-      setError(err.message);
-      // Fallback на обычный анализ
-      setAiAnalysis(generateFallbackAnalysis());
+    } catch (error) {
+      console.error("Error loading AI analytics:", error);
+      setError("Не удалось загрузить аналитику");
+      // Используем локальную логику как fallback
+      setAiData(generateFallbackAnalytics(tasks));
     } finally {
       setLoading(false);
     }
   };
 
-  const generateFallbackAnalysis = () => {
+  // Fallback аналитика если API недоступно
+  const generateFallbackAnalytics = (tasks) => {
     const today = new Date().toDateString();
     const todayTasks = tasks.filter(task => {
       const taskDate = new Date(task.task_date).toDateString();
@@ -1277,212 +1278,228 @@ function DailyAnalysis({ tasks, currentUser }) {
     });
     const completedToday = todayTasks.filter(t => t.status === 'done').length;
     const pendingToday = todayTasks.filter(t => t.status !== 'done').length;
+    const totalMinutes = todayTasks.reduce((sum, task) => sum + task.estimated_minutes, 0);
+    const completedMinutes = todayTasks
+      .filter(t => t.status === 'done')
+      .reduce((sum, task) => sum + task.estimated_minutes, 0);
+
+    const efficiency = todayTasks.length ? Math.round((completedToday / todayTasks.length) * 100) : 0;
+    const timeUtilization = totalMinutes ? Math.round((completedMinutes / totalMinutes) * 100) : 0;
 
     return {
       completed_today: completedToday,
       pending_today: pendingToday,
       total_today: todayTasks.length,
+      total_minutes: totalMinutes,
+      completed_minutes: completedMinutes,
+      efficiency_rate: efficiency,
+      time_utilization: timeUtilization,
       ai_analysis: {
-        mood: completedToday > pendingToday ? 'good' : 'needs_improvement',
-        productivity_score: todayTasks.length ? Math.round((completedToday / todayTasks.length) * 100) : 0,
+        productivity_score: efficiency,
         insights: [
-          completedToday === 0 ? 'Начните с маленькой задачи для запуска продуктивности' : 
-          'Стабильный прогресс, продолжайте в том же духе!'
+          completedToday === 0 ? "Начните день с выполнения первой задачи!" : 
+          completedToday >= pendingToday ? "Отличный старт дня! Продолжайте в том же духе!" :
+          "Сосредоточьтесь на завершении начатых задач",
+          timeUtilization > 80 ? "Эффективное использование времени!" :
+          timeUtilization > 50 ? "Хороший темп работы" :
+          "Попробуйте лучше распределить время между задачами"
         ],
         recommendations: [
-          'Используйте Pomodoro технику для лучшей концентрации',
-          'Разбивайте большие задачи на маленькие шаги'
+          "Используйте технику Pomodoro для лучшей концентрации",
+          "Начните с самых сложных задач утром",
+          "Делайте регулярные перерывы для поддержания продуктивности"
         ],
-        focus_areas: [
-          'Завершение начатых задач',
-          'Баланс между сложными и простыми задачами'
-        ]
+        energy_level: efficiency >= 80 ? "high" : efficiency >= 50 ? "medium" : "low",
+        mood_analysis: efficiency >= 70 ? "positive" : efficiency >= 40 ? "neutral" : "needs_improvement"
       }
     };
   };
 
   if (loading) {
     return (
-      <div className="space-y-6">
-        <div className="text-center">
-          <h2 className="text-xl font-bold text-white">AI Анализ дня</h2>
-          <p className="text-slate-300 text-sm">Искусственный интеллект анализирует вашу продуктивность...</p>
+      <div className="space-y-4 sm:space-y-6">
+        <div className="text-center mb-6 sm:mb-8">
+          <h2 className="text-lg sm:text-xl font-bold text-white">AI Анализ</h2>
+          <p className="text-slate-300 text-sm">Анализируем вашу продуктивность...</p>
         </div>
-        <div className="flex justify-center items-center py-12">
+        <div className="flex justify-center items-center py-8 sm:py-12">
           <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-          <span className="ml-3 text-white">AI анализирует ваш день...</span>
+          <span className="ml-3 text-white text-sm sm:text-base">Загрузка AI анализа...</span>
         </div>
       </div>
     );
   }
 
-  if (error && !aiAnalysis) {
+  if (error && !aiData) {
     return (
-      <div className="space-y-6">
-        <div className="text-center">
-          <h2 className="text-xl font-bold text-white">Анализ дня</h2>
-          <p className="text-slate-300 text-sm">Общий анализ продуктивности</p>
+      <div className="space-y-4 sm:space-y-6">
+        <div className="text-center mb-6 sm:mb-8">
+          <h2 className="text-lg sm:text-xl font-bold text-white">AI Анализ</h2>
+          <p className="text-slate-300 text-sm">Произошла ошибка при загрузке аналитики</p>
         </div>
-        <div className="bg-orange-500/10 border border-orange-500/30 rounded-2xl p-6 text-center">
-          <div className="text-orange-300 mb-2">⚠️ AI анализ временно недоступен</div>
-          <div className="text-slate-300 text-sm">{error}</div>
+        <div className="text-center py-8 sm:py-12 text-slate-400">
+          <div className="w-16 h-16 bg-red-500/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <p className="text-red-400 mb-4">{error}</p>
+          <button
+            onClick={loadAiAnalytics}
+            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+          >
+            Попробовать снова
+          </button>
         </div>
-        {renderFallbackAnalysis()}
       </div>
     );
   }
 
-  const renderAiAnalysis = () => {
-    if (!aiAnalysis?.ai_analysis) return renderFallbackAnalysis();
+  const analysis = aiData?.ai_analysis || {};
+  const stats = aiData || {};
 
-    const analysis = aiAnalysis.ai_analysis;
-    const stats = aiAnalysis;
-
-    const getMoodConfig = (mood) => {
-      switch (mood) {
-        case 'excellent': return { emoji: '🎉', color: 'from-green-500/10 to-emerald-500/10 border-green-500/30', label: 'Отлично!' };
-        case 'good': return { emoji: '🚀', color: 'from-blue-500/10 to-cyan-500/10 border-blue-500/30', label: 'Хорошо' };
-        case 'moderate': return { emoji: '💪', color: 'from-yellow-500/10 to-amber-500/10 border-yellow-500/30', label: 'Нормально' };
-        case 'needs_improvement': return { emoji: '📈', color: 'from-orange-500/10 to-red-500/10 border-orange-500/30', label: 'Можно лучше' };
-        default: return { emoji: '🎯', color: 'from-purple-500/10 to-pink-500/10 border-purple-500/30', label: 'Анализ' };
-      }
-    };
-
-    const moodConfig = getMoodConfig(analysis.mood);
-
-    return (
-      <div className="space-y-6">
-        {/* Основной анализ */}
-        <div className={`bg-gradient-to-r ${moodConfig.color} rounded-2xl p-6 sm:p-8 border`}>
-          <div className="text-center">
-            <div className="text-4xl mb-4">{moodConfig.emoji}</div>
-            <div className="text-2xl font-bold text-white mb-2">{moodConfig.label}</div>
-            <div className="text-white/80 text-lg mb-6">
-              Оценка продуктивности: <span className="text-yellow-300 font-bold">{analysis.productivity_score}%</span>
-            </div>
-            
-            <div className="grid grid-cols-3 gap-4 max-w-md mx-auto">
-              <div className="bg-white/10 rounded-xl p-4 backdrop-blur-sm">
-                <div className="text-xl font-bold text-white">{stats.total_today || 0}</div>
-                <div className="text-white/80 text-sm">Всего</div>
-              </div>
-              <div className="bg-white/10 rounded-xl p-4 backdrop-blur-sm">
-                <div className="text-xl font-bold text-white">{stats.completed_today || 0}</div>
-                <div className="text-white/80 text-sm">Завершено</div>
-              </div>
-              <div className="bg-white/10 rounded-xl p-4 backdrop-blur-sm">
-                <div className="text-xl font-bold text-white">{stats.pending_today || 0}</div>
-                <div className="text-white/80 text-sm">В процессе</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* AI Инсайты */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-slate-700 rounded-xl p-6 border border-slate-500">
-            <h3 className="text-lg font-bold text-white mb-4">🧠 AI Инсайты</h3>
-            <div className="space-y-3">
-              {analysis.insights?.map((insight, index) => (
-                <div key={index} className="flex items-start space-x-3">
-                  <div className="w-2 h-2 bg-blue-400 rounded-full mt-2 flex-shrink-0"></div>
-                  <p className="text-slate-300 text-sm">{insight}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="bg-slate-700 rounded-xl p-6 border border-slate-500">
-            <h3 className="text-lg font-bold text-white mb-4">💡 Рекомендации</h3>
-            <div className="space-y-3">
-              {analysis.recommendations?.map((recommendation, index) => (
-                <div key={index} className="flex items-start space-x-3">
-                  <div className="w-2 h-2 bg-green-400 rounded-full mt-2 flex-shrink-0"></div>
-                  <p className="text-slate-300 text-sm">{recommendation}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Фокус области */}
-        {analysis.focus_areas && analysis.focus_areas.length > 0 && (
-          <div className="bg-slate-700 rounded-xl p-6 border border-slate-500">
-            <h3 className="text-lg font-bold text-white mb-4">🎯 Области для улучшения</h3>
-            <div className="flex flex-wrap gap-2">
-              {analysis.focus_areas.map((area, index) => (
-                <span 
-                  key={index}
-                  className="px-3 py-2 bg-orange-500/20 text-orange-300 rounded-lg text-sm border border-orange-500/30"
-                >
-                  {area}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Дополнительная статистика */}
-        <div className="bg-slate-700 rounded-xl p-6 border border-slate-500">
-          <h3 className="text-lg font-bold text-white mb-4">📊 Детальная статистика</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-blue-400">{analysis.productivity_score}%</div>
-              <div className="text-slate-300 text-sm">Эффективность</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-green-400">
-                {stats.completed_today || 0}/{stats.total_today || 0}
-              </div>
-              <div className="text-slate-300 text-sm">Завершено</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-purple-400">
-                {stats.pending_today || 0}
-              </div>
-              <div className="text-slate-300 text-sm">В процессе</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-yellow-400">
-                {analysis.energy_efficiency ? `${analysis.energy_efficiency}%` : 'N/A'}
-              </div>
-              <div className="text-slate-300 text-sm">Энергия</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+  const getProductivityColor = (score) => {
+    if (score >= 80) return 'from-green-500 to-emerald-500';
+    if (score >= 60) return 'from-yellow-500 to-amber-500';
+    if (score >= 40) return 'from-orange-500 to-red-500';
+    return 'from-red-500 to-pink-500';
   };
 
-  const renderFallbackAnalysis = () => {
-    // Ваш существующий код анализа дня
-    const today = new Date().toDateString();
-    const todayTasks = tasks.filter(task => {
-      const taskDate = new Date(task.task_date).toDateString();
-      return taskDate === today;
-    });
-    const completedToday = todayTasks.filter(t => t.status === 'done').length;
-    const pendingToday = todayTasks.filter(t => t.status !== 'done').length;
-
-    // ... остальной код из вашего текущего DailyAnalysis
-    return (
-      <div>
-        {/* Существующая логика анализа */}
-      </div>
-    );
+  const getEnergyLevel = () => {
+    const level = analysis.energy_level || 'medium';
+    switch(level) {
+      case 'high': return { label: '🔋 Высокая', color: 'text-green-400' };
+      case 'medium': return { label: '⚡ Средняя', color: 'text-yellow-400' };
+      case 'low': return { label: '🪫 Низкая', color: 'text-red-400' };
+      default: return { label: '⚡ Средняя', color: 'text-yellow-400' };
+    }
   };
+
+  const getMoodEmoji = () => {
+    const mood = analysis.mood_analysis || 'neutral';
+    switch(mood) {
+      case 'positive': return '😊';
+      case 'neutral': return '😐';
+      case 'needs_improvement': return '😔';
+      default: return '😐';
+    }
+  };
+
+  const energyInfo = getEnergyLevel();
 
   return (
-    <div className="space-y-6">
-      <div className="text-center">
-        <h2 className="text-xl font-bold text-white">🧠 AI Анализ дня</h2>
-        <p className="text-slate-300 text-sm">Умный анализ вашей продуктивности от нейросети</p>
+    <div className="space-y-4 sm:space-y-6">
+      <div className="text-center mb-6 sm:mb-8">
+        <h2 className="text-lg sm:text-xl font-bold text-white">AI Анализ продуктивности</h2>
+        <p className="text-slate-300 text-sm">Умная аналитика вашего дня</p>
       </div>
-      
-      {renderAiAnalysis()}
-      
-      <div className="text-center text-slate-400 text-sm">
-        💡 Анализ обновляется автоматически при изменении задач
+
+      {/* Основная статистика */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
+        <div className="bg-slate-700 rounded-xl p-3 sm:p-4 text-center border border-slate-500">
+          <div className="text-lg sm:text-xl font-bold text-blue-400">{stats.completed_today || 0}</div>
+          <div className="text-slate-300 text-xs sm:text-sm">Завершено</div>
+        </div>
+        <div className="bg-slate-700 rounded-xl p-3 sm:p-4 text-center border border-slate-500">
+          <div className="text-lg sm:text-xl font-bold text-yellow-400">{stats.pending_today || 0}</div>
+          <div className="text-slate-300 text-xs sm:text-sm">В процессе</div>
+        </div>
+        <div className="bg-slate-700 rounded-xl p-3 sm:p-4 text-center border border-slate-500">
+          <div className="text-lg sm:text-xl font-bold text-purple-400">{stats.efficiency_rate || 0}%</div>
+          <div className="text-slate-300 text-xs sm:text-sm">Эффективность</div>
+        </div>
+        <div className="bg-slate-700 rounded-xl p-3 sm:p-4 text-center border border-slate-500">
+          <div className="text-lg sm:text-xl font-bold text-green-400">
+            {Math.round((stats.completed_minutes || 0) / 60)}ч
+          </div>
+          <div className="text-slate-300 text-xs sm:text-sm">Работа</div>
+        </div>
+      </div>
+
+      {/* Оценка продуктивности */}
+      <div className={`bg-gradient-to-r ${getProductivityColor(analysis.productivity_score || 0)} rounded-2xl p-4 sm:p-6 border`}>
+        <div className="text-center">
+          <div className="text-2xl sm:text-3xl mb-2">{getMoodEmoji()}</div>
+          <div className="text-xl sm:text-2xl font-bold text-white mb-2">
+            Оценка продуктивности: {analysis.productivity_score || 0}%
+          </div>
+          <div className="text-white/80 text-sm sm:text-base">
+            Уровень энергии: <span className={energyInfo.color}>{energyInfo.label}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* AI Инсайты и рекомендации */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+        {/* Инсайты */}
+        <div className="bg-slate-700 rounded-xl p-4 sm:p-6 border border-slate-500">
+          <h3 className="text-base sm:text-lg font-bold text-white mb-3 sm:mb-4">
+            🧠 AI Инсайты
+          </h3>
+          <div className="space-y-2 sm:space-y-3">
+            {(analysis.insights || []).map((insight, index) => (
+              <div key={index} className="flex items-start space-x-2 sm:space-x-3">
+                <div className="w-2 h-2 bg-blue-400 rounded-full mt-2 flex-shrink-0"></div>
+                <p className="text-slate-300 text-xs sm:text-sm">{insight}</p>
+              </div>
+            ))}
+            {(!analysis.insights || analysis.insights.length === 0) && (
+              <p className="text-slate-400 text-sm">Анализ данных в процессе...</p>
+            )}
+          </div>
+        </div>
+
+        {/* Рекомендации */}
+        <div className="bg-slate-700 rounded-xl p-4 sm:p-6 border border-slate-500">
+          <h3 className="text-base sm:text-lg font-bold text-white mb-3 sm:mb-4">
+            💡 Рекомендации
+          </h3>
+          <div className="space-y-2 sm:space-y-3">
+            {(analysis.recommendations || []).map((recommendation, index) => (
+              <div key={index} className="flex items-start space-x-2 sm:space-x-3">
+                <div className="w-2 h-2 bg-green-400 rounded-full mt-2 flex-shrink-0"></div>
+                <p className="text-slate-300 text-xs sm:text-sm">{recommendation}</p>
+              </div>
+            ))}
+            {(!analysis.recommendations || analysis.recommendations.length === 0) && (
+              <p className="text-slate-400 text-sm">Загрузка рекомендаций...</p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Детальная статистика */}
+      <div className="bg-slate-700 rounded-xl p-4 sm:p-6 border border-slate-500">
+        <h3 className="text-base sm:text-lg font-bold text-white mb-3 sm:mb-4">📊 Детальная статистика</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <div className="text-center p-3 bg-slate-600 rounded-lg">
+            <div className="text-blue-400 font-bold text-lg">{stats.total_today || 0}</div>
+            <div className="text-slate-300 text-sm">Всего задач</div>
+          </div>
+          <div className="text-center p-3 bg-slate-600 rounded-lg">
+            <div className="text-green-400 font-bold text-lg">{stats.completed_today || 0}</div>
+            <div className="text-slate-300 text-sm">Выполнено</div>
+          </div>
+          <div className="text-center p-3 bg-slate-600 rounded-lg">
+            <div className="text-yellow-400 font-bold text-lg">
+              {Math.round((stats.total_minutes || 0) / 60)}ч
+            </div>
+            <div className="text-slate-300 text-sm">Планируемое время</div>
+          </div>
+          <div className="text-center p-3 bg-slate-600 rounded-lg">
+            <div className="text-purple-400 font-bold text-lg">{stats.time_utilization || 0}%</div>
+            <div className="text-slate-300 text-sm">Использование времени</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="text-center">
+        <button
+          onClick={loadAiAnalytics}
+          className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg hover:from-blue-600 hover:to-purple-600 transition-colors text-sm"
+        >
+          Обновить анализ
+        </button>
       </div>
     </div>
   );
@@ -2596,3 +2613,4 @@ export default function App() {
     </div>
   );
 }
+
