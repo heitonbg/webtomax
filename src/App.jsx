@@ -1269,51 +1269,43 @@ function DailyAnalysis({ tasks, currentUser }) {
     }
   };
 
-  // Fallback аналитика если API недоступно
   const generateFallbackAnalytics = (tasks) => {
-    const today = new Date().toDateString();
-    const todayTasks = tasks.filter(task => {
-      const taskDate = new Date(task.task_date).toDateString();
-      return taskDate === today;
-    });
-    const completedToday = todayTasks.filter(t => t.status === 'done').length;
-    const pendingToday = todayTasks.filter(t => t.status !== 'done').length;
-    const totalMinutes = todayTasks.reduce((sum, task) => sum + task.estimated_minutes, 0);
-    const completedMinutes = todayTasks
-      .filter(t => t.status === 'done')
-      .reduce((sum, task) => sum + task.estimated_minutes, 0);
+  const today = new Date().toDateString();
+  const todayTasks = tasks.filter(task => {
+    const taskDate = new Date(task.created_at).toDateString();
+    return taskDate === today;
+  });
+  
+  const completedToday = todayTasks.filter(t => t.status === 'done').length;
+  const pendingToday = todayTasks.filter(t => t.status !== 'done').length;
+  const totalToday = todayTasks.length;
+  const efficiency = totalToday > 0 ? Math.round((completedToday / totalToday) * 100) : 0;
 
-    const efficiency = todayTasks.length ? Math.round((completedToday / todayTasks.length) * 100) : 0;
-    const timeUtilization = totalMinutes ? Math.round((completedMinutes / totalMinutes) * 100) : 0;
-
-    return {
-      completed_today: completedToday,
-      pending_today: pendingToday,
-      total_today: todayTasks.length,
-      total_minutes: totalMinutes,
-      completed_minutes: completedMinutes,
-      efficiency_rate: efficiency,
-      time_utilization: timeUtilization,
-      ai_analysis: {
-        productivity_score: efficiency,
-        insights: [
-          completedToday === 0 ? "Начните день с выполнения первой задачи!" : 
-          completedToday >= pendingToday ? "Отличный старт дня! Продолжайте в том же духе!" :
-          "Сосредоточьтесь на завершении начатых задач",
-          timeUtilization > 80 ? "Эффективное использование времени!" :
-          timeUtilization > 50 ? "Хороший темп работы" :
-          "Попробуйте лучше распределить время между задачами"
-        ],
-        recommendations: [
-          "Используйте технику Pomodoro для лучшей концентрации",
-          "Начните с самых сложных задач утром",
-          "Делайте регулярные перерывы для поддержания продуктивности"
-        ],
-        energy_level: efficiency >= 80 ? "high" : efficiency >= 50 ? "medium" : "low",
-        mood_analysis: efficiency >= 70 ? "positive" : efficiency >= 40 ? "neutral" : "needs_improvement"
-      }
-    };
+  return {
+    completed_today: completedToday,
+    pending_today: pendingToday,
+    total_today: totalToday,
+    efficiency_rate: efficiency,
+    ai_analysis: {
+      productivity_score: efficiency,
+      insights: [
+        completedToday === 0 ? "Начните день с выполнения первой задачи!" : 
+        completedToday >= pendingToday ? "Отличный старт дня! Продолжайте в том же духе!" :
+        "Сосредоточьтесь на завершении начатых задач",
+        totalToday === 0 ? "Добавьте задачи для анализа продуктивности" :
+        `Завершено ${completedToday} из ${totalToday} задач`
+      ],
+      recommendations: [
+        "Используйте технику Pomodoro для лучшей концентрации",
+        "Начните с самых сложных задач утром",
+        totalToday === 0 ? "Добавьте первую задачу чтобы начать" :
+        "Делайте регулярные перерывы для поддержания продуктивности"
+      ],
+      energy_level: efficiency >= 80 ? "high" : efficiency >= 50 ? "medium" : "low",
+      mood_analysis: efficiency >= 70 ? "positive" : efficiency >= 40 ? "neutral" : "needs_improvement"
+    }
   };
+};
 
   if (loading) {
     return (
@@ -1329,6 +1321,17 @@ function DailyAnalysis({ tasks, currentUser }) {
       </div>
     );
   }
+
+  if (aiData) {
+  const analysis = aiData?.ai_analysis || {};
+  const stats = aiData || {};
+  
+  // Если анализ пустой, используем fallback
+  if (!analysis.insights || analysis.insights.length === 0) {
+    const fallbackData = generateFallbackAnalytics(tasks);
+    setAiData(fallbackData);
+  }
+}
 
   if (error && !aiData) {
     return (
@@ -2613,4 +2616,5 @@ export default function App() {
     </div>
   );
 }
+
 
