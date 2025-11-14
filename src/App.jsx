@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 
-const API = "http://localhost:8000";
+const API = "https://servicebotformax-iwrawww.amvera.io";
 
 // вход по айди
 function LoginForm({ onLogin }) {
@@ -2381,5 +2381,6 @@ export default function App() {
       </div>
     </div>
   );
+
 
 }
