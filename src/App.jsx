@@ -2,31 +2,94 @@ import React, { useEffect, useState } from "react";
 
 const API = "http://localhost:8000";
 
-// вход по айди с проверкой через MAX API
-// вход по айди - ПРОСТАЯ И НАДЕЖНАЯ ПРОВЕРКА ЧЕРЕЗ БАЗУ
+
 function LoginForm({ onLogin }) {
   const [maxUserId, setMaxUserId] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [realUserId, setRealUserId] = useState(null);
+
+  // Получаем РЕАЛЬНЫЙ ID пользователя из MAX
+  useEffect(() => {
+    const findRealUserId = () => {
+      // Способ 1: Ищем в URL параметрах
+      const urlParams = new URLSearchParams(window.location.search);
+      console.log("📋 Все URL параметры:", Object.fromEntries(urlParams));
+
+      // MAX обычно передает данные в tgWebAppData или initData
+      const initData = urlParams.get('tgWebAppData') || urlParams.get('initData');
+      if (initData) {
+        console.log("🔍 InitData found:", initData);
+        try {
+          // Парсим initData
+          const params = new URLSearchParams(initData);
+          const userJson = params.get('user');
+          if (userJson) {
+            const user = JSON.parse(decodeURIComponent(userJson));
+            if (user && user.id) {
+              console.log("✅ Real user ID found:", user.id);
+              setRealUserId(user.id.toString());
+              return;
+            }
+          }
+        } catch (e) {
+          console.error("Error parsing initData:", e);
+        }
+      }
+
+      // Способ 2: Пробуем через window.TelegramWebApp
+      if (window.TelegramWebApp && window.TelegramWebApp.initDataUnsafe) {
+        const user = window.TelegramWebApp.initDataUnsafe.user;
+        if (user && user.id) {
+          console.log("✅ Real user ID from TelegramWebApp:", user.id);
+          setRealUserId(user.id.toString());
+          return;
+        }
+      }
+
+      // Способ 3: Пробуем через window.MAX
+      if (window.MAX && window.MAX.initData) {
+        console.log("🔍 MAX initData:", window.MAX.initData);
+        // Парсим initData MAX
+      }
+
+      console.log("❌ Could not find real user ID");
+      setRealUserId("NOT_FOUND");
+    };
+
+    findRealUserId();
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!realUserId || realUserId === "NOT_FOUND") {
+      setError("❌ Не удалось определить ваш аккаунт. Откройте приложение через MAX.");
+      return;
+    }
+
     if (maxUserId.trim()) {
       setLoading(true);
       setError("");
 
       try {
-        // ПРОВЕРЯЕМ: соответствует ли введенный ID реальному пользователю
-        const verifyResponse = await fetch(`${API}/user/verify-id?external_id=max_${maxUserId}&entered_id=${maxUserId}`);
-        const verifyResult = await verifyResponse.json();
+        // СТРОГАЯ ПРОВЕРКА: введенный ID должен совпадать с РЕАЛЬНЫМ ID из MAX
+        console.log(`🔍 Comparing: entered=${maxUserId}, real=${realUserId}`);
 
-        if (verifyResult.valid) {
-          // УСПЕХ: введенный ID соответствует пользователю
-          const userResponse = await fetch(`${API}/user/profile?external_id=max_${maxUserId}`);
+        if (maxUserId !== realUserId) {
+          setError(`❌ Доступ запрещен! Это не ваш аккаунт.`);
+          setLoading(false);
+          return;
+        }
+
+        // Дополнительно проверяем что пользователь есть в базе
+        const userResponse = await fetch(`${API}/user/profile?external_id=max_${maxUserId}`);
+
+        if (userResponse.ok) {
           const userData = await userResponse.json();
           onLogin(`max_${maxUserId}`, userData.name, maxUserId);
         } else {
-          setError(`❌ ${verifyResult.error || "Доступ запрещен! Это не ваш аккаунт."}`);
+          setError("❌ Пользователь с таким ID не найден. Начните с бота в MAX!");
         }
       } catch (error) {
         setError("❌ Ошибка подключения к серверу");
@@ -35,6 +98,13 @@ function LoginForm({ onLogin }) {
       }
     }
   };
+
+  // Автозаполнение когда получили реальный ID
+  useEffect(() => {
+    if (realUserId && realUserId !== "NOT_FOUND") {
+      setMaxUserId(realUserId);
+    }
+  }, [realUserId]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-800 flex items-center justify-center p-4">
