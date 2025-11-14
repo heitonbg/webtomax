@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 
 const API = "https://servicebotformax-iwrawww.amvera.io";
 
-// Компонент загрузки
 function LoadingScreen() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-800 flex items-center justify-center p-4">
@@ -53,14 +52,12 @@ function AutoLogin({ onLogin, onError }) {
     try {
       setStatus("Проверяем MAX Bridge...");
       
-      // Проверяем доступность MAX Bridge
       if (!window.WebApp) {
         throw new Error("MAX Bridge не доступен. Откройте приложение через MAX мессенджер.");
       }
 
       setStatus("Получаем данные пользователя...");
       
-      // Получаем данные пользователя из MAX
       const initData = window.WebApp.initDataUnsafe;
       console.log("MAX initData:", initData);
 
@@ -73,26 +70,21 @@ function AutoLogin({ onLogin, onError }) {
       
       setStatus(`Привет, ${user.first_name || 'Пользователь'}!`);
 
-      // Создаем external_id в формате max_123456
       const externalId = `max_${maxUserId}`;
       
       setStatus("Синхронизация с сервером...");
 
       try {
-        // Пытаемся получить профиль пользователя
         const userResponse = await fetch(`${API}/user/profile?external_id=${externalId}`);
         
         if (userResponse.ok) {
-          // Пользователь существует - логинимся
           const userData = await userResponse.json();
           completeLogin(externalId, userData.name, user, initData);
         } else {
-          // Пользователь не существует - создаем нового
           await createNewUser(externalId, user, initData);
         }
       } catch (error) {
         console.error("Ошибка при проверке пользователя:", error);
-        // Пытаемся создать пользователя при ошибке
         await createNewUser(externalId, user, initData);
       }
 
@@ -106,14 +98,12 @@ function AutoLogin({ onLogin, onError }) {
     setStatus("Создаем ваш профиль...");
     
     try {
-      // Создаем пользователя через API
       const createResponse = await fetch(`${API}/user/create?external_id=${externalId}&name=${encodeURIComponent(getUserName(user))}`);
       
       if (!createResponse.ok) {
         throw new Error("Не удалось создать пользователя на сервере");
       }
 
-      // Синхронизируем дополнительные данные
       await syncUserData(externalId, user, initData);
       
       completeLogin(externalId, getUserName(user), user, initData);
@@ -1262,59 +1252,57 @@ function DailyAnalysis({ tasks, currentUser }) {
     } catch (error) {
       console.error("Error loading AI analytics:", error);
       setError("Не удалось загрузить аналитику");
-      // Используем локальную логику как fallback
       setAiData(generateFallbackAnalytics(tasks));
     } finally {
       setLoading(false);
     }
   };
 
+  // Fallback аналитика если API недоступно
   const generateFallbackAnalytics = (tasks) => {
-  const today = new Date().toDateString();
-  const todayTasks = tasks.filter(task => {
-    const taskDate = new Date(task.task_date || task.created_at).toDateString();
-    return taskDate === today;
-  });
-  
-  const completedToday = todayTasks.filter(t => t.status === 'done').length;
-  const pendingToday = todayTasks.filter(t => t.status !== 'done').length;
-  const totalToday = todayTasks.length;
-  const efficiency = totalToday > 0 ? Math.round((completedToday / totalToday) * 100) : 0;
+    const today = new Date().toDateString();
+    const todayTasks = tasks.filter(task => {
+      const taskDate = new Date(task.task_date).toDateString();
+      return taskDate === today;
+    });
+    const completedToday = todayTasks.filter(t => t.status === 'done').length;
+    const pendingToday = todayTasks.filter(t => t.status !== 'done').length;
+    const totalMinutes = todayTasks.reduce((sum, task) => sum + task.estimated_minutes, 0);
+    const completedMinutes = todayTasks
+      .filter(t => t.status === 'done')
+      .reduce((sum, task) => sum + task.estimated_minutes, 0);
 
-  // Расчет времени
-  const totalMinutes = todayTasks.reduce((sum, task) => sum + (task.estimated_minutes || 0), 0);
-  const completedMinutes = todayTasks
-    .filter(t => t.status === 'done')
-    .reduce((sum, task) => sum + (task.estimated_minutes || 0), 0);
-  const timeUtilization = totalMinutes > 0 ? Math.round((completedMinutes / totalMinutes) * 100) : 0;
+    const efficiency = todayTasks.length ? Math.round((completedToday / todayTasks.length) * 100) : 0;
+    const timeUtilization = totalMinutes ? Math.round((completedMinutes / totalMinutes) * 100) : 0;
 
-  return {
-    completed_today: completedToday,
-    pending_today: pendingToday,
-    total_today: totalToday,
-    efficiency_rate: efficiency,
-    total_minutes: totalMinutes,
-    completed_minutes: completedMinutes,
-    time_utilization: timeUtilization,
-    ai_analysis: {
-      productivity_score: efficiency,
-      insights: [
-        completedToday === 0 ? "Начните день с выполнения первой задачи!" : 
-        completedToday >= pendingToday ? "Отличный старт дня! Продолжайте в том же духе!" :
-        "Сосредоточьтесь на завершении начатых задач",
-        totalToday === 0 ? "Добавьте задачи для анализа продуктивности" :
-        `Завершено ${completedToday} из ${totalToday} задач (${efficiency}%)`
-      ],
-      recommendations: [
-        "Используйте технику Pomodoro для лучшей концентрации",
-        totalMinutes > 0 ? `Запланировано ${Math.round(totalMinutes/60)}ч работы` : "Добавьте оценку времени к задачам",
-        "Делайте регулярные перерывы для поддержания продуктивности"
-      ],
-      energy_level: efficiency >= 80 ? "high" : efficiency >= 50 ? "medium" : "low",
-      mood_analysis: efficiency >= 70 ? "positive" : efficiency >= 40 ? "neutral" : "needs_improvement"
-    }
+    return {
+      completed_today: completedToday,
+      pending_today: pendingToday,
+      total_today: todayTasks.length,
+      total_minutes: totalMinutes,
+      completed_minutes: completedMinutes,
+      efficiency_rate: efficiency,
+      time_utilization: timeUtilization,
+      ai_analysis: {
+        productivity_score: efficiency,
+        insights: [
+          completedToday === 0 ? "Начните день с выполнения первой задачи!" : 
+          completedToday >= pendingToday ? "Отличный старт дня! Продолжайте в том же духе!" :
+          "Сосредоточьтесь на завершении начатых задач",
+          timeUtilization > 80 ? "Эффективное использование времени!" :
+          timeUtilization > 50 ? "Хороший темп работы" :
+          "Попробуйте лучше распределить время между задачами"
+        ],
+        recommendations: [
+          "Используйте технику Pomodoro для лучшей концентрации",
+          "Начните с самых сложных задач утром",
+          "Делайте регулярные перерывы для поддержания продуктивности"
+        ],
+        energy_level: efficiency >= 80 ? "high" : efficiency >= 50 ? "medium" : "low",
+        mood_analysis: efficiency >= 70 ? "positive" : efficiency >= 40 ? "neutral" : "needs_improvement"
+      }
+    };
   };
-};
 
   if (loading) {
     return (
@@ -1330,17 +1318,6 @@ function DailyAnalysis({ tasks, currentUser }) {
       </div>
     );
   }
-
-  if (aiData) {
-  const analysis = aiData?.ai_analysis || {};
-  const stats = aiData || {};
-  
-  // Если анализ пустой, используем fallback
-  if (!analysis.insights || analysis.insights.length === 0) {
-    const fallbackData = generateFallbackAnalytics(tasks);
-    setAiData(fallbackData);
-  }
-}
 
   if (error && !aiData) {
     return (
@@ -2348,7 +2325,7 @@ export default function App() {
   const [selectedDateForTask, setSelectedDateForTask] = useState(null);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('tasks');
-  const [authState, setAuthState] = useState('checking'); // 'checking', 'auto-login', 'error'
+  const [authState, setAuthState] = useState('checking'); 
 
   useEffect(() => {
     checkMaxEnvironment();
@@ -2419,7 +2396,6 @@ export default function App() {
         difficulty: parseInt(difficulty) || 2
       };
 
-      // Если дата указана - добавляем в запрос
       if (taskDate) {
         taskData.task_date = taskDate;
       }
@@ -2428,7 +2404,6 @@ export default function App() {
 
       let response;
       
-      // Если родительская задача - используем специальный эндпоинт
       if (isParentTask) {
         response = await fetch(`${API}/tasks/decompose?external_id=${currentUser.id}`, {
           method: "POST",
@@ -2438,7 +2413,6 @@ export default function App() {
           body: JSON.stringify(taskData),
         });
       } else {
-        // Обычная задача
         response = await fetch(`${API}/tasks/create?external_id=${currentUser.id}`, {
           method: "POST",
           headers: {
@@ -2451,7 +2425,7 @@ export default function App() {
       if (response.ok) {
         const result = await response.json();
         console.log("Task created successfully:", result);
-        await loadTasks(); // Перезагружаем задачи
+        await loadTasks(); 
       } else {
         const errorText = await response.text();
         console.error("Server error:", response.status, errorText);
@@ -2478,7 +2452,7 @@ export default function App() {
       });
 
       if (response.ok) {
-        await loadTasks(); // Перезагрузка задач после завершения
+        await loadTasks(); 
       } else {
         console.error("Failed to complete task:", response.status);
       }
@@ -2492,7 +2466,6 @@ export default function App() {
     setShowAddTask(true);
   };
 
-  // Обработчик ошибок всего приложения
   useEffect(() => {
     const handleError = (error) => {
       console.error("Global error:", error);
@@ -2507,7 +2480,6 @@ export default function App() {
     };
   }, []);
 
-  // Показываем соответствующий экран в зависимости от состояния аутентификации
   if (authState === 'checking') {
     return <LoadingScreen />;
   }
@@ -2625,6 +2597,3 @@ export default function App() {
     </div>
   );
 }
-
-
-
