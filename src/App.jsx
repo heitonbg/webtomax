@@ -1,9 +1,8 @@
-// App.jsx - ПОЛНАЯ АДАПТИВНАЯ ВЕРСИЯ ДЛЯ МОБИЛЬНЫХ И ПК
 import React, { useEffect, useState } from "react";
 
-const API = "https://servicebotformax-iwrawww.amvera.io";
+const API = "http://localhost:8000";
 
-// Компонент входа по ID
+// вход по айди
 function LoginForm({ onLogin }) {
   const [maxUserId, setMaxUserId] = useState("");
   const [loading, setLoading] = useState(false);
@@ -98,22 +97,21 @@ function LoginForm({ onLogin }) {
   );
 }
 
-// АДАПТИВНАЯ НАВИГАЦИЯ
 function MobileNavigation({ activeTab, setActiveTab }) {
   const [showMenu, setShowMenu] = useState(false);
 
   const tabs = [
-    { id: 'tasks', label: '📝 Задачи', icon: '📝' },
-    { id: 'calendar', label: '📅 Календарь', icon: '📅' },
-    { id: 'pomodoro', label: '⏱️ Фокус', icon: '⏱️' },
-    { id: 'profile', label: '👤 Профиль', icon: '👤' },
-    { id: 'analysis', label: '📊 Анализ', icon: '📊' },
-    { id: 'kanban', label: '📋 Канбан', icon: '📋' }
+    { id: 'tasks', label: 'Задачи', icon: '📝' },
+    { id: 'calendar', label: 'Календарь', icon: '📅' },
+    { id: 'pomodoro', label: 'Фокус', icon: '⏱️' },
+    { id: 'profile', label: 'Профиль', icon: '👤' },
+    { id: 'analysis', label: 'Анализ', icon: '📊' },
+    { id: 'kanban', label: 'Канбан', icon: '📋' }
   ];
 
   return (
     <>
-      {/* Мобильное меню (бургер) */}
+      {/* крабсбургер(мобил) */}
       <div className="lg:hidden">
         <button
           onClick={() => setShowMenu(!showMenu)}
@@ -150,7 +148,7 @@ function MobileNavigation({ activeTab, setActiveTab }) {
         )}
       </div>
 
-      {/* Десктопная навигация */}
+      {/* навигация */}
       <div className="hidden lg:flex overflow-x-auto space-x-1 bg-slate-700 p-1 rounded-xl border border-slate-500 mb-6 scrollbar-hide">
         {tabs.map(tab => (
           <button
@@ -170,7 +168,7 @@ function MobileNavigation({ activeTab, setActiveTab }) {
   );
 }
 
-// АДАПТИВНАЯ ПАНЕЛЬ ПОДЗАДАЧ
+// панель подзадач
 function SubtasksPanel({ task, onClose, onAddSubtask, onCompleteSubtask, onRefresh }) {
   const [subtasks, setSubtasks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -406,7 +404,7 @@ function SubtasksPanel({ task, onClose, onAddSubtask, onCompleteSubtask, onRefre
   );
 }
 
-// АДАПТИВНЫЙ СПИСОК ЗАДАЧ
+// список задач таск лист
 function TaskList({ tasks, onComplete, onAddTask, currentUser, onTaskUpdate }) {
   const [filter, setFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
@@ -443,7 +441,7 @@ function TaskList({ tasks, onComplete, onAddTask, currentUser, onTaskUpdate }) {
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      {/* Заголовок и кнопка */}
+      {/* заголовок и кнопка */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
         <div className="flex-1 min-w-0">
           <h2 className="text-lg sm:text-xl font-bold text-white truncate">Мои задачи</h2>
@@ -459,7 +457,7 @@ function TaskList({ tasks, onComplete, onAddTask, currentUser, onTaskUpdate }) {
         </button>
       </div>
 
-      {/* Поиск и фильтры */}
+      {/* поиск и фильтры */}
       <div className="flex flex-col gap-3">
         <div className="flex-1">
           <div className="relative">
@@ -498,7 +496,7 @@ function TaskList({ tasks, onComplete, onAddTask, currentUser, onTaskUpdate }) {
         </div>
       </div>
 
-      {/* Статистика - адаптивная сетка */}
+      {/* Статистика */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
         <div className="bg-slate-700 rounded-xl p-3 sm:p-4 text-center border border-slate-500">
           <div className="text-lg sm:text-xl font-bold text-blue-400">{stats.total}</div>
@@ -628,7 +626,7 @@ function TaskList({ tasks, onComplete, onAddTask, currentUser, onTaskUpdate }) {
   );
 }
 
-// АДАПТИВНЫЙ ЭНЕРГЕТИЧЕСКИЙ КАЛЕНДАРЬ
+// календарь энергии
 function EnergyCalendar({ tasks, onAddTask }) {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -705,7 +703,7 @@ function EnergyCalendar({ tasks, onAddTask }) {
               {date.getDate()}
             </div>
             
-            {/* Индикаторы задач - скрываем на маленьких экранах */}
+            {/* индикаторы задач - скрываем на маленьких экранах */}
             {dayTasks.length > 0 && (
               <div className="hidden sm:flex justify-center space-x-1 mb-1">
                 {dayTasks.slice(0, 2).map((task, index) => (
@@ -724,7 +722,7 @@ function EnergyCalendar({ tasks, onAddTask }) {
               </div>
             )}
             
-            {/* Уровень энергии - показываем только на больших экранах */}
+            {/* energylevel - показываем только на больших экранах */}
             {energyLevel > 0 && (
               <div className="hidden sm:block text-[10px] text-white/90 font-semibold">
                 {Math.round(energyLevel)}%
@@ -783,7 +781,7 @@ function EnergyCalendar({ tasks, onAddTask }) {
         </div>
       </div>
 
-      {/* Канбан доска */}
+      {/* Кабан доска */}
       <div className="grid grid-cols-7 gap-1 sm:gap-2 mb-3 sm:mb-4">
         {['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'].map(day => (
           <div key={day} className="text-center font-medium text-slate-400 py-1 sm:py-2 text-xs sm:text-sm">
@@ -796,7 +794,7 @@ function EnergyCalendar({ tasks, onAddTask }) {
         {renderMonthView()}
       </div>
 
-      {/* Задачи выбранного дня */}
+      {/* задачи выбранного дня */}
       {selectedDayTasks.length > 0 && (
         <div className="bg-slate-700 rounded-xl p-3 sm:p-4 border border-slate-500 mt-4">
           <h3 className="text-base sm:text-lg font-semibold text-white mb-2 sm:mb-3">
@@ -836,7 +834,7 @@ function EnergyCalendar({ tasks, onAddTask }) {
   );
 }
 
-// АДАПТИВНЫЙ Pomodoro таймер
+// Pomodoro таймер
 function PomodoroTimer({ tasks, onTaskComplete }) {
   const [timeLeft, setTimeLeft] = useState(25 * 60);
   const [isRunning, setIsRunning] = useState(false);
@@ -884,7 +882,7 @@ function PomodoroTimer({ tasks, onTaskComplete }) {
         <p className="text-slate-300 text-sm">Метод Pomodoro для максимальной продуктивности</p>
       </div>
 
-      {/* Main timer */}
+      {/* таймер */}
       <div className={`relative rounded-2xl p-4 sm:p-8 text-center border transition-all duration-300 ${
         mode === 'work' 
           ? 'bg-gradient-to-br from-red-500/10 to-orange-500/10 border-red-500/30' 
@@ -931,7 +929,7 @@ function PomodoroTimer({ tasks, onTaskComplete }) {
         </div>
       </div>
 
-      {/* Task selection */}
+      {/* фокусировка вхождение в поток */}
       <div className="bg-slate-700 rounded-xl p-4 sm:p-6 border border-slate-500">
         <label className="block text-white font-semibold mb-3 sm:mb-4 text-sm sm:text-base">
           Выберите задачу для фокусировки:
@@ -970,7 +968,7 @@ function PomodoroTimer({ tasks, onTaskComplete }) {
   );
 }
 
-// АДАПТИВНЫЙ ПРОФИЛЬ
+// юзерпрофиль
 function UserProfile({ tasks, currentUser }) {
   const completedTasks = tasks.filter(t => t.status === 'done').length;
   const totalTasks = tasks.length;
@@ -1046,7 +1044,7 @@ function UserProfile({ tasks, currentUser }) {
         </div>
       </div>
 
-      {/* Статистика */}
+      {/* статистика */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
         <div className="bg-slate-700 rounded-xl p-3 sm:p-4 text-center border border-slate-500">
           <div className="text-lg sm:text-xl font-bold text-blue-400">{totalTasks}</div>
@@ -1066,7 +1064,7 @@ function UserProfile({ tasks, currentUser }) {
         </div>
       </div>
 
-      {/* Температурная карта активности */}
+      {/* температурная карта активности */}
       <div className="bg-slate-700 rounded-2xl p-4 sm:p-6 border border-slate-500">
         <h3 className="text-base sm:text-lg font-bold text-white mb-3 sm:mb-4">📊 Активность за неделю</h3>
         <div className="grid grid-cols-7 gap-1 sm:gap-2">
@@ -1090,7 +1088,7 @@ function UserProfile({ tasks, currentUser }) {
         </div>
       </div>
 
-      {/* Достижения */}
+      {/* Достижения но их мало к сожалению извините */}
       <div className="bg-slate-700 rounded-2xl p-4 sm:p-6 border border-slate-500">
         <h3 className="text-base sm:text-lg font-bold text-white mb-3 sm:mb-4">🏆 Достижения</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
@@ -1137,7 +1135,7 @@ function UserProfile({ tasks, currentUser }) {
   );
 }
 
-// АДАПТИВНЫЙ ЕЖЕДНЕВНЫЙ АНАЛИЗ
+// ежедневный анализ 
 function DailyAnalysis({ tasks }) {
   const today = new Date().toDateString();
   const todayTasks = tasks.filter(task => {
@@ -1221,7 +1219,7 @@ function DailyAnalysis({ tasks }) {
         <p className="text-slate-300 text-sm">Ваша продуктивность сегодня</p>
       </div>
 
-      {/* Основная статистика */}
+      {/* статистика */}
       <div className={`bg-gradient-to-r ${motivation.color} rounded-2xl p-4 sm:p-8 text-center border`}>
         <div className="text-3xl sm:text-4xl mb-3 sm:mb-4">{motivation.emoji}</div>
         <div className="text-xl sm:text-2xl font-bold text-white mb-3 sm:mb-4">{motivation.message}</div>
@@ -1242,7 +1240,7 @@ function DailyAnalysis({ tasks }) {
         </div>
       </div>
 
-      {/* Рекомендации */}
+      {/* рекомендации */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         <div className="bg-slate-700 rounded-xl p-4 sm:p-6 border border-slate-500">
           <h3 className="text-base sm:text-lg font-bold text-white mb-3 sm:mb-4">💡 Советы на сегодня</h3>
@@ -1292,7 +1290,7 @@ function DailyAnalysis({ tasks }) {
   );
 }
 
-// АДАПТИВНЫЙ КАНБАН ДОСКА - ИСПРАВЛЕННАЯ ВЕРСИЯ
+// кабан доска))
 function KanbanBoard({ currentUser }) {
   const [projects, setProjects] = useState([]);
   const [selectedProjectId, setSelectedProjectId] = useState(null);
@@ -1574,7 +1572,7 @@ function KanbanBoard({ currentUser }) {
         </div>
       ) : selectedProject ? (
         <div className="space-y-4">
-          {/* Информация о проекте */}
+          {/* информация о проекте */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
             <div className="flex-1 min-w-0">
               <h3 className="text-lg font-bold text-white truncate">{selectedProject.title}</h3>
@@ -1594,7 +1592,7 @@ function KanbanBoard({ currentUser }) {
             </button>
           </div>
 
-          {/* Канбан доска - адаптивная версия */}
+          {/* Канбан доска */}
           <div className="flex flex-col lg:flex-row lg:space-x-4 space-y-4 lg:space-y-0 overflow-hidden">
             {selectedProject.columns && selectedProject.columns.map(column => (
               <div 
@@ -1603,7 +1601,7 @@ function KanbanBoard({ currentUser }) {
                 onDragOver={handleDragOver}
                 onDrop={(e) => handleDrop(e, column)}
               >
-                {/* Заголовок колонки */}
+                {/* заголовок колонки */}
                 <div 
                   className="p-4 rounded-t-xl border-b border-slate-500"
                   style={{ backgroundColor: column.color + '20' }}
@@ -1618,7 +1616,7 @@ function KanbanBoard({ currentUser }) {
                   </div>
                 </div>
 
-                {/* Карточки в колонке */}
+                {/* карточки в колонке */}
                 <div className="p-3 space-y-3 min-h-48 max-h-96 overflow-y-auto">
                   {column.cards && column.cards.map(card => (
                     <div
@@ -1669,7 +1667,7 @@ function KanbanBoard({ currentUser }) {
                     </div>
                   ))}
                   
-                  {/* Кнопка добавления карточки */}
+                  {/* кнопка добавления карточки */}
                   <button
                     onClick={() => {
                       setSelectedColumn(column);
@@ -1686,7 +1684,7 @@ function KanbanBoard({ currentUser }) {
         </div>
       ) : null}
 
-      {/* Модальное окно создания проекта */}
+      {/* модальное окно создания проекта */}
       {showCreateProject && (
         <CreateProjectModal
           onCreate={createProject}
@@ -1694,7 +1692,7 @@ function KanbanBoard({ currentUser }) {
         />
       )}
 
-      {/* Модальное окно создания карточки */}
+      {/* модальное окно создания карточки */}
       {showCreateCard && selectedColumn && (
         <CreateCardModal
           column={selectedColumn}
@@ -1709,7 +1707,7 @@ function KanbanBoard({ currentUser }) {
   );
 }
 
-// Модальное окно создания проекта
+// модальное окно для создания проекта
 function CreateProjectModal({ onCreate, onClose }) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -1806,7 +1804,7 @@ function CreateProjectModal({ onCreate, onClose }) {
   );
 }
 
-// Модальное окно создания карточки
+// модальное окно для создания карточки
 function CreateCardModal({ column, onCreate, onClose }) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -1928,7 +1926,7 @@ function CreateCardModal({ column, onCreate, onClose }) {
   );
 }
 
-// Исправленное модальное окно добавления задачи
+// модальное окно добавления задач
 function AddTaskModal({ onAdd, onClose, selectedDate, title = "Новая задача" }) {
   const [taskTitle, setTaskTitle] = useState("");
   const [minutes, setMinutes] = useState(25);
@@ -2115,7 +2113,7 @@ function AddTaskModal({ onAdd, onClose, selectedDate, title = "Новая зад
   );
 }
 
-// Исправленный главный компонент App
+//непосредственно главный компонент
 export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [tasks, setTasks] = useState([]);
@@ -2167,7 +2165,7 @@ export default function App() {
     localStorage.removeItem("taskbot_user");
   };
 
-  // ИСПРАВЛЕННЫЙ обработчик добавления задачи
+  // добавление задач
   const handleAddTask = async (title, minutes, difficulty, taskDate = null, isParentTask = false) => {
     if (!currentUser) {
       console.error("No current user");
@@ -2181,7 +2179,7 @@ export default function App() {
         difficulty: parseInt(difficulty) || 2
       };
 
-      // Если указана дата, добавляем её в запрос
+      // если дата указана - добавляем в запрос
       if (taskDate) {
         taskData.task_date = taskDate;
       }
@@ -2190,7 +2188,7 @@ export default function App() {
 
       let response;
       
-      // Если это родительская задача, используем специальный endpoint для разложения
+      //если род.задача используем специальный эндпоинт
       if (isParentTask) {
         response = await fetch(`${API}/tasks/decompose?external_id=${currentUser.id}`, {
           method: "POST",
@@ -2200,7 +2198,7 @@ export default function App() {
           body: JSON.stringify(taskData),
         });
       } else {
-        // Обычная задача
+        //дефолт задачка
         response = await fetch(`${API}/tasks/create?external_id=${currentUser.id}`, {
           method: "POST",
           headers: {
@@ -2213,7 +2211,7 @@ export default function App() {
       if (response.ok) {
         const result = await response.json();
         console.log("Task created successfully:", result);
-        await loadTasks(); // Перезагружаем задачи
+        await loadTasks(); // перезагружаем задачи
       } else {
         const errorText = await response.text();
         console.error("Server error:", response.status, errorText);
@@ -2240,7 +2238,7 @@ export default function App() {
       });
 
       if (response.ok) {
-        await loadTasks(); // Перезагружаем задачи после завершения
+        await loadTasks(); // перезагрузка задач после завершения 
       } else {
         console.error("Failed to complete task:", response.status);
       }
@@ -2270,7 +2268,7 @@ export default function App() {
     }
   }, []);
 
-  // Добавим обработчик ошибок для всего приложения
+  // обработчик ошибок всего приложения
   useEffect(() => {
     const handleError = (error) => {
       console.error("Global error:", error);
