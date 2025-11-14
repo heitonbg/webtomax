@@ -3,68 +3,42 @@ import React, { useEffect, useState } from "react";
 const API = "http://localhost:8000";
 
 
+// вход по айди - РЕАЛЬНАЯ ПРОВЕРКА ЧЕРЕЗ MAX API
 function LoginForm({ onLogin }) {
   const [maxUserId, setMaxUserId] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [realUserId, setRealUserId] = useState(null);
+  const [realMaxUserId, setRealMaxUserId] = useState(null);
 
-  // Получаем РЕАЛЬНЫЙ ID пользователя из MAX
+  // Получаем реальный ID пользователя из MAX
   useEffect(() => {
-    const findRealUserId = () => {
-      // Способ 1: Ищем в URL параметрах
-      const urlParams = new URLSearchParams(window.location.search);
-      console.log("📋 Все URL параметры:", Object.fromEntries(urlParams));
+    const getRealUserId = () => {
+      try {
+        console.log("WebApp object:", window.WebApp);
+        console.log("initDataUnsafe:", window.WebApp?.initDataUnsafe);
 
-      // MAX обычно передает данные в tgWebAppData или initData
-      const initData = urlParams.get('tgWebAppData') || urlParams.get('initData');
-      if (initData) {
-        console.log("🔍 InitData found:", initData);
-        try {
-          // Парсим initData
-          const params = new URLSearchParams(initData);
-          const userJson = params.get('user');
-          if (userJson) {
-            const user = JSON.parse(decodeURIComponent(userJson));
-            if (user && user.id) {
-              console.log("✅ Real user ID found:", user.id);
-              setRealUserId(user.id.toString());
-              return;
-            }
-          }
-        } catch (e) {
-          console.error("Error parsing initData:", e);
+        if (window.WebApp && window.WebApp.initDataUnsafe && window.WebApp.initDataUnsafe.user) {
+          const realUserId = window.WebApp.initDataUnsafe.user.id.toString();
+          console.log("✅ Real user ID from MAX:", realUserId);
+          setRealMaxUserId(realUserId);
+        } else {
+          console.error("❌ Cannot get user ID from MAX");
+          setRealMaxUserId("NOT_FOUND");
         }
+      } catch (error) {
+        console.error("Error getting MAX user ID:", error);
+        setRealMaxUserId("ERROR");
       }
-
-      // Способ 2: Пробуем через window.TelegramWebApp
-      if (window.TelegramWebApp && window.TelegramWebApp.initDataUnsafe) {
-        const user = window.TelegramWebApp.initDataUnsafe.user;
-        if (user && user.id) {
-          console.log("✅ Real user ID from TelegramWebApp:", user.id);
-          setRealUserId(user.id.toString());
-          return;
-        }
-      }
-
-      // Способ 3: Пробуем через window.MAX
-      if (window.MAX && window.MAX.initData) {
-        console.log("🔍 MAX initData:", window.MAX.initData);
-        // Парсим initData MAX
-      }
-
-      console.log("❌ Could not find real user ID");
-      setRealUserId("NOT_FOUND");
     };
 
-    findRealUserId();
+    getRealUserId();
   }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!realUserId || realUserId === "NOT_FOUND") {
-      setError("❌ Не удалось определить ваш аккаунт. Откройте приложение через MAX.");
+    if (!realMaxUserId || realMaxUserId === "NOT_FOUND" || realMaxUserId === "ERROR") {
+      setError("❌ Не удалось определить ваш аккаунт MAX. Откройте приложение через MAX.");
       return;
     }
 
@@ -73,16 +47,16 @@ function LoginForm({ onLogin }) {
       setError("");
 
       try {
-        // СТРОГАЯ ПРОВЕРКА: введенный ID должен совпадать с РЕАЛЬНЫМ ID из MAX
-        console.log(`🔍 Comparing: entered=${maxUserId}, real=${realUserId}`);
+        // СТРОГАЯ ПРОВЕРКА: введенный ID должен совпадать с реальным ID из MAX
+        console.log(`🔍 Checking: entered=${maxUserId}, real=${realMaxUserId}`);
 
-        if (maxUserId !== realUserId) {
-          setError(`❌ Доступ запрещен! Это не ваш аккаунт.`);
+        if (maxUserId !== realMaxUserId) {
+          setError(`❌ Доступ запрещен! Это не ваш аккаунт. Ваш ID: ${realMaxUserId}`);
           setLoading(false);
           return;
         }
 
-        // Дополнительно проверяем что пользователь есть в базе
+        // Проверяем что пользователь есть в базе
         const userResponse = await fetch(`${API}/user/profile?external_id=max_${maxUserId}`);
 
         if (userResponse.ok) {
@@ -101,10 +75,43 @@ function LoginForm({ onLogin }) {
 
   // Автозаполнение когда получили реальный ID
   useEffect(() => {
-    if (realUserId && realUserId !== "NOT_FOUND") {
-      setMaxUserId(realUserId);
+    if (realMaxUserId && realMaxUserId !== "NOT_FOUND" && realMaxUserId !== "ERROR") {
+      setMaxUserId(realMaxUserId);
     }
-  }, [realUserId]);
+  }, [realMaxUserId]);
+
+  // Если не можем получить ID
+  if (realMaxUserId === "NOT_FOUND" || realMaxUserId === "ERROR") {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-800 flex items-center justify-center p-4">
+        <div className="bg-slate-800 rounded-2xl p-6 sm:p-8 shadow-2xl border border-slate-600 w-full max-w-md mx-4 text-center">
+          <div className="w-14 h-14 bg-red-500/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+          </div>
+          <h2 className="text-xl font-bold text-white mb-2">Требуется MAX</h2>
+          <p className="text-slate-300 mb-4">
+            Приложение должно быть открыто через MAX мессенджер.
+          </p>
+          <div className="bg-slate-700/50 rounded-xl p-4 text-left mb-4">
+            <p className="text-sm text-slate-300 mb-2">Для входа:</p>
+            <ol className="text-sm text-slate-400 space-y-1 list-decimal list-inside">
+              <li>Откройте приложение через MAX</li>
+              <li>Начните с бота для регистрации</li>
+              <li>Используйте ваш реальный ID</li>
+            </ol>
+          </div>
+          <button
+            onClick={() => window.location.reload()}
+            className="w-full bg-blue-500 text-white py-3 rounded-xl hover:bg-blue-600 transition-colors font-semibold"
+          >
+            Обновить страницу
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-800 flex items-center justify-center p-4">
@@ -116,13 +123,15 @@ function LoginForm({ onLogin }) {
             </svg>
           </div>
           <h1 className="text-xl sm:text-2xl font-bold text-white mb-2">TaskFlow Pro</h1>
-          <p className="text-slate-300 text-sm">Вход по вашему ID из MAX</p>
+          <p className="text-slate-300 text-sm">
+            {realMaxUserId ? `Безопасный вход - ваш ID: ${realMaxUserId}` : "Определяем ваш аккаунт..."}
+          </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2 sm:mb-3">
-              Ваш уникальный ID из MAX
+              {realMaxUserId ? "Подтвердите вход" : "Определяем ваш ID..."}
             </label>
             <div className="relative">
               <input
@@ -130,8 +139,9 @@ function LoginForm({ onLogin }) {
                 value={maxUserId}
                 onChange={(e) => setMaxUserId(e.target.value.replace(/\D/g, ''))}
                 className="w-full p-3 sm:p-4 bg-slate-700 border border-slate-500 rounded-xl text-white placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-base"
-                placeholder="Введите цифровой ID"
+                placeholder={realMaxUserId || "Ожидание MAX..."}
                 required
+                disabled={!realMaxUserId}
               />
               <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
                 <div className="bg-blue-500/20 text-blue-300 px-2 py-1 rounded text-xs font-mono">
@@ -139,9 +149,11 @@ function LoginForm({ onLogin }) {
                 </div>
               </div>
             </div>
-            <p className="text-xs text-slate-400 mt-2">
-              💡 ID можно получить в боте MAX командой /start
-            </p>
+            {realMaxUserId && (
+              <p className="text-xs text-green-400 mt-2">
+                ✓ MAX определил ваш аккаунт
+              </p>
+            )}
           </div>
 
           {error && (
@@ -157,7 +169,7 @@ function LoginForm({ onLogin }) {
 
           <button
             type="submit"
-            disabled={loading || !maxUserId.trim()}
+            disabled={loading || !maxUserId.trim() || !realMaxUserId}
             className="w-full bg-gradient-to-r from-blue-500 to-purple-500 text-white py-3 sm:py-4 rounded-xl hover:from-blue-600 hover:to-purple-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105 font-semibold shadow-lg border border-blue-400/30 text-base min-h-[44px]"
           >
             {loading ? (
@@ -166,22 +178,21 @@ function LoginForm({ onLogin }) {
                 <span>Проверка доступа...</span>
               </div>
             ) : (
-              "Войти в систему"
+              "Подтвердить и войти"
             )}
           </button>
         </form>
 
-        <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-slate-700/50 rounded-xl border border-slate-600">
-          <div className="flex items-start space-x-2">
-            <svg className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <div className="text-xs text-slate-300">
-              <p className="font-medium">Безопасный вход</p>
-              <p>Система проверяет что введенный ID соответствует вашему аккаунту в базе.</p>
+        {realMaxUserId && (
+          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-green-500/10 rounded-xl border border-green-500/30">
+            <div className="flex items-center space-x-2 text-green-400">
+              <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+              <span className="text-sm">MAX подтвердил ваш аккаунт. Вход безопасен.</span>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
