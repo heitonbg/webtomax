@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 
-const API = "https://servicebotformax-iwrawww.amvera.io";
+const API = "https://botmax-iwrawww.amvera.io";
 
 function LoadingScreen() {
   return (
@@ -2597,3 +2597,4 @@ export default function App() {
     </div>
   );
 }
+
