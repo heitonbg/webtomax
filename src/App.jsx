@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 
-const API = "https://botik-iwrawww.amvera.io/";
+const API = "https://botik-iwrawww.amvera.io";
 
 function LoadingScreen() {
   return (
