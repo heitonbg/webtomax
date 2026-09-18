@@ -1,23 +1,59 @@
 import { MOCK_EVENTS } from '../data/mockEvents';
 
-// Флаг: используем локальные моки или реальный API
-const USE_MOCK = true;
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+// ============================================
+// ЛОКАЛЬНЫЙ СЕРВЕР
+// ============================================
+const API = 'http://localhost:3001';
+
+// Отключаем моки — работаем с реальным сервером
+const USE_MOCK = false;
 
 let localEvents = [...MOCK_EVENTS];
 
-export const fetchEvents = async (filters = {}) => {
-  if (USE_MOCK) {
-    // Имитация сети
-    await new Promise((r) => setTimeout(r, 150));
-    return localEvents;
+// ============================================
+// ХЕЛПЕР: базовый fetch
+// ============================================
+const apiFetch = async (path, options = {}) => {
+  const url = `${API}${path}`;
+  const res = await fetch(url, {
+    headers: {
+      'Content-Type': 'application/json',
+      ...(options.headers || {})
+    },
+    ...options
+  });
+
+  if (!res.ok) {
+    let errorMessage = `Ошибка ${res.status}`;
+    try {
+      const err = await res.json();
+      errorMessage = err.error || errorMessage;
+    } catch (e) {
+      // ignore
+    }
+    throw new Error(errorMessage);
   }
-  const params = new URLSearchParams(filters).toString();
-  const res = await fetch(`${API_URL}/events?${params}`);
-  if (!res.ok) throw new Error('Ошибка загрузки событий');
+
   return res.json();
 };
 
+// ============================================
+// GET все события
+// ============================================
+export const fetchEvents = async (filters = {}) => {
+  if (USE_MOCK) {
+    await new Promise((r) => setTimeout(r, 150));
+    return localEvents;
+  }
+
+  const params = new URLSearchParams(filters).toString();
+  const path = params ? `/api/events?${params}` : '/api/events';
+  return apiFetch(path);
+};
+
+// ============================================
+// POST создать событие
+// ============================================
 export const createEvent = async (eventData) => {
   if (USE_MOCK) {
     await new Promise((r) => setTimeout(r, 200));
@@ -32,18 +68,16 @@ export const createEvent = async (eventData) => {
     localEvents = [newEvent, ...localEvents];
     return newEvent;
   }
-  const res = await fetch(`${API_URL}/events`, {
+
+  return apiFetch('/api/events', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(eventData)
   });
-  if (!res.ok) {
-    const err = await res.json();
-    throw new Error(err.error || 'Ошибка создания события');
-  }
-  return res.json();
 };
 
+// ============================================
+// POST присоединиться
+// ============================================
 export const joinEvent = async (eventId, userId) => {
   if (USE_MOCK) {
     await new Promise((r) => setTimeout(r, 100));
@@ -52,24 +86,36 @@ export const joinEvent = async (eventId, userId) => {
     );
     return { success: true };
   }
-  const res = await fetch(`${API_URL}/events/${eventId}/join`, {
+
+  return apiFetch(`/api/events/${eventId}/join`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ userId })
   });
-  if (!res.ok) throw new Error('Ошибка присоединения');
-  return res.json();
 };
 
+// ============================================
+// POST жалоба
+// ============================================
 export const reportEvent = async (eventId, reason, reporterId) => {
   if (USE_MOCK) {
     console.log('[Report]', { eventId, reason, reporterId });
     return { success: true };
   }
-  const res = await fetch(`${API_URL}/reports`, {
+
+  return apiFetch('/api/reports', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ eventId, reason, reporterId })
   });
-  return res.json();
+};
+
+// ============================================
+// GET health-check
+// ============================================
+export const checkHealth = async () => {
+  try {
+    return await apiFetch('/health');
+  } catch (e) {
+    console.warn('Server health check failed:', e.message);
+    return { status: 'error', message: e.message };
+  }
 };
