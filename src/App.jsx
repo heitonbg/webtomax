@@ -28,6 +28,7 @@ function App() {
   const [filters, setFilters] = useState(null);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [joinedIds, setJoinedIds] = useState([]);
+  const [likedIds, setLikedIds] = useState([]);
   const [user, setUser] = useState(null);
   const [userCoords, setUserCoords] = useState(null);
 
@@ -137,18 +138,24 @@ function App() {
           e.id === event.id ? { ...e, participants: e.participants + 1 } : e
         )
       );
-
       maxBridge.sendData({
         action: 'join_event',
         eventId: event.id,
         eventTitle: event.title,
         eventTime: event.eventTime || null
       });
-
       maxBridge.showAlert(`✅ Вы записались на "${event.title}"`);
     } catch (e) {
       maxBridge.showAlert('Не удалось присоединиться');
     }
+  };
+
+  const handleToggleLike = (eventId) => {
+    setLikedIds((prev) =>
+      prev.includes(eventId)
+        ? prev.filter((id) => id !== eventId)
+        : [...prev, eventId]
+    );
   };
 
   const handleCreateEvent = async (newEvent) => {
@@ -186,10 +193,17 @@ function App() {
         {isExploreTab && (
           <>
             <div className="mobile-header">
-              <h1>События рядом</h1>
+              <h1>
+                События рядом
+                <span className="header-location">
+                  <span className="pin">📍</span>
+                  Казань
+                  <span className="chevron">▼</span>
+                </span>
+              </h1>
               {user && (
                 <p className="greeting">
-                  Привет, {user.first_name || user.name}! 👋
+                  Больше, чем просто планы 💙
                 </p>
               )}
             </div>
@@ -205,13 +219,13 @@ function App() {
                 className={`tab-btn ${activeTab === 'feed' ? 'active' : ''}`}
                 onClick={() => setActiveTab('feed')}
               >
-                📋 Лента
+                <span className="tab-icon">📅</span> Лента
               </button>
               <button
                 className={`tab-btn ${activeTab === 'map' ? 'active' : ''}`}
                 onClick={() => setActiveTab('map')}
               >
-                🗺️ Карта
+                <span className="tab-icon">🗺️</span> Карта
               </button>
             </div>
 
@@ -229,36 +243,24 @@ function App() {
           </>
         )}
 
-        {/* Контент: на ПК лента+карта рядом, на мобиле — одна вкладка */}
         <div className="content-area">
           {loading ? (
             <EventSkeletonList count={3} />
           ) : (
             <>
-              {isExploreTab && (
-                <div className="split-view">
-                  {/* Лента */}
-                  {(activeTab === 'feed' || window.innerWidth >= 1200) && (
-                    <div className="split-pane split-feed">
-                      <EventFeed
-                        events={filteredEvents}
-                        onJoin={handleJoinEvent}
-                        onEventClick={handleEventClick}
-                        joinedIds={joinedIds}
-                      />
-                    </div>
-                  )}
+              {activeTab === 'feed' && (
+                <EventFeed
+                  events={filteredEvents}
+                  onJoin={handleJoinEvent}
+                  onEventClick={handleEventClick}
+                  joinedIds={joinedIds}
+                  likedIds={likedIds}
+                  onToggleLike={handleToggleLike}
+                />
+              )}
 
-                  {/* Карта — на ПК всегда, на мобиле только во вкладке "Карта" */}
-                  {activeTab === 'map' && (
-                    <div className="split-pane split-map">
-                      <EventMap
-                        events={filteredEvents}
-                        onJoin={handleJoinEvent}
-                      />
-                    </div>
-                  )}
-                </div>
+              {activeTab === 'map' && (
+                <EventMap events={filteredEvents} onJoin={handleJoinEvent} />
               )}
 
               {activeTab === 'create' && (
@@ -307,9 +309,7 @@ function App() {
           </button>
           <button
             onClick={() => setActiveTab('create')}
-            className={`create-btn ${
-              activeTab === 'create' ? 'active' : ''
-            }`}
+            className={`create-btn ${activeTab === 'create' ? 'active' : ''}`}
           >
             <span className="icon-plus">+</span>
           </button>
