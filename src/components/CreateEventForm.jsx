@@ -1,5 +1,19 @@
 import React, { useState } from 'react';
-import { moderateContent, validateAddress, moderateUrl } from '../utils/contentModeration';
+import {
+  moderateContent,
+  validateAddress,
+  moderateUrl
+} from '../utils/contentModeration';
+
+const CATEGORIES = [
+  'Настольные игры',
+  'Спорт',
+  'Культура',
+  'Кино',
+  'Прогулка',
+  'Музыка',
+  'Другое'
+];
 
 const CreateEventForm = ({ onCreate, onCancel, userId, userName }) => {
   const [formData, setFormData] = useState({
@@ -13,8 +27,8 @@ const CreateEventForm = ({ onCreate, onCancel, userId, userName }) => {
     limit: '',
     description: '',
     image: '',
-    lat: null,
-    lng: null
+    lat: 55.796,
+    lng: 49.108
   });
 
   const [errors, setErrors] = useState({});
@@ -24,9 +38,7 @@ const CreateEventForm = ({ onCreate, onCancel, userId, userName }) => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-    if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: null }));
-    }
+    if (errors[name]) setErrors((prev) => ({ ...prev, [name]: null }));
   };
 
   const validate = () => {
@@ -64,7 +76,6 @@ const CreateEventForm = ({ onCreate, onCancel, userId, userName }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
-
     setSubmitting(true);
 
     const newEvent = {
@@ -76,14 +87,17 @@ const CreateEventForm = ({ onCreate, onCancel, userId, userName }) => {
       time: formData.time,
       format: formData.format,
       address: formData.format === 'Онлайн' ? 'Онлайн' : formData.address,
-      district: formData.format === 'Онлайн' ? 'Онлайн' : formData.district || formData.address,
+      district:
+        formData.format === 'Онлайн'
+          ? 'Онлайн'
+          : formData.district || formData.address,
       maxParticipants: parseInt(formData.limit) || 50,
       participants: 1,
       image:
         formData.image ||
         'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&w=800&q=80',
-      lat: formData.lat || 55.796,
-      lng: formData.lng || 49.108,
+      lat: formData.lat,
+      lng: formData.lng,
       distance: '0.0 км',
       rating: 0,
       reviewsCount: 0,
@@ -100,152 +114,194 @@ const CreateEventForm = ({ onCreate, onCancel, userId, userName }) => {
   };
 
   return (
-    <div className="create-form">
-      <h2>Создать событие</h2>
-      <p className="form-subtitle">Делитесь идеями. Собирайте людей. Делайте город ярче!</p>
+    <div className="create-form-v2">
+      <div className="create-header">
+        <button className="back-btn" onClick={onCancel} aria-label="Назад">
+          ←
+        </button>
+        <div>
+          <h1>Создать событие</h1>
+          <p className="create-subtitle">
+            Делитесь идеями. Собирайте людей. Делайте город ярче!
+          </p>
+        </div>
+      </div>
 
       <form onSubmit={handleSubmit}>
+        {/* Название */}
         <div className="form-group">
-          <label>Название события *</label>
-          <input
-            className={`form-input ${errors.title ? 'error' : ''}`}
-            name="title"
-            placeholder="Например, Футбол 5x5, нужны игроки"
-            value={formData.title}
-            onChange={handleChange}
-          />
+          <label>Название события</label>
+          <div className={`input-with-icon ${errors.title ? 'error' : ''}`}>
+            <span className="input-icon">✏️</span>
+            <input
+              name="title"
+              placeholder="Например, Вечер настолок в «Смене»"
+              value={formData.title}
+              onChange={handleChange}
+            />
+          </div>
           {errors.title && <p className="error-text">⚠️ {errors.title}</p>}
         </div>
 
+        {/* Категория */}
         <div className="form-group">
-          <label>Категория *</label>
-          <select
-            className={`form-input ${errors.category ? 'error' : ''}`}
-            name="category"
-            value={formData.category}
-            onChange={handleChange}
-          >
-            <option value="">Выберите категорию</option>
-            <option value="Спорт">Спорт</option>
-            <option value="Культура">Культура</option>
-            <option value="Настольные игры">Настольные игры</option>
-            <option value="Кино">Кино</option>
-            <option value="Прогулка">Прогулка</option>
-            <option value="Другое">Другое</option>
-          </select>
+          <label>Категория</label>
+          <div className={`input-with-icon select-wrapper ${errors.category ? 'error' : ''}`}>
+            <span className="input-icon">⊞</span>
+            <select
+              name="category"
+              value={formData.category}
+              onChange={handleChange}
+            >
+              <option value="">Выберите категорию</option>
+              {CATEGORIES.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+            <span className="select-chevron">▼</span>
+          </div>
           {errors.category && <p className="error-text">⚠️ {errors.category}</p>}
         </div>
 
-        <div className="form-row">
+        {/* Дата и время */}
+        <div className="form-row-2">
           <div className="form-group">
-            <label>Дата *</label>
-            <input
-              className={`form-input ${errors.date ? 'error' : ''}`}
-              type="date"
-              name="date"
-              value={formData.date}
-              onChange={handleChange}
-            />
+            <label>Дата</label>
+            <div className={`input-with-icon ${errors.date ? 'error' : ''}`}>
+              <span className="input-icon">📅</span>
+              <input
+                type="date"
+                name="date"
+                value={formData.date}
+                onChange={handleChange}
+              />
+            </div>
             {errors.date && <p className="error-text">⚠️ {errors.date}</p>}
           </div>
           <div className="form-group">
-            <label>Время *</label>
-            <input
-              className={`form-input ${errors.time ? 'error' : ''}`}
-              type="time"
-              name="time"
-              value={formData.time}
-              onChange={handleChange}
-            />
+            <label>Время</label>
+            <div className={`input-with-icon ${errors.time ? 'error' : ''}`}>
+              <span className="input-icon">🕐</span>
+              <input
+                type="time"
+                name="time"
+                value={formData.time}
+                onChange={handleChange}
+              />
+            </div>
             {errors.time && <p className="error-text">⚠️ {errors.time}</p>}
           </div>
         </div>
 
+        {/* Формат */}
         <div className="form-group">
           <label>Формат</label>
-          <div className="format-toggle">
-            {['Офлайн', 'Онлайн'].map((f) => (
-              <button
-                key={f}
-                type="button"
-                className={formData.format === f ? 'active' : ''}
-                onClick={() => setFormData({ ...formData, format: f })}
-              >
-                {f === 'Офлайн' ? '👥 Офлайн' : '💻 Онлайн'}
-              </button>
-            ))}
+          <div className="format-segmented">
+            <button
+              type="button"
+              className={formData.format === 'Офлайн' ? 'active' : ''}
+              onClick={() => setFormData({ ...formData, format: 'Офлайн' })}
+            >
+              <span>👥</span> Офлайн
+            </button>
+            <button
+              type="button"
+              className={formData.format === 'Онлайн' ? 'active' : ''}
+              onClick={() => setFormData({ ...formData, format: 'Онлайн' })}
+            >
+              <span>💻</span> Онлайн
+            </button>
           </div>
         </div>
 
+        {/* Место проведения */}
         {formData.format === 'Офлайн' && (
-          <>
-            <div className="form-group">
-              <label>Место проведения *</label>
-              <input
-                className={`form-input ${errors.address ? 'error' : ''}`}
-                name="address"
-                placeholder="Например, парк Горького, спортплощадка"
-                value={formData.address}
-                onChange={handleChange}
-              />
-              {errors.address && <p className="error-text">⚠️ {errors.address}</p>}
-              <p className="hint-text">
-                💡 Указывайте общественные места: парки, кафе, спортплощадки
-              </p>
+          <div className="form-group">
+            <label>Место проведения</label>
+            <div className="address-row">
+              <div className={`input-with-icon ${errors.address ? 'error' : ''}`}>
+                <span className="input-icon">📍</span>
+                <input
+                  name="address"
+                  placeholder="Введите адрес"
+                  value={formData.address}
+                  onChange={handleChange}
+                />
+              </div>
+              <button
+                type="button"
+                className="map-picker-btn"
+                onClick={() =>
+                  alert('Укажите адрес в поле слева — точка подставится автоматически')
+                }
+              >
+                <span>🗺️</span> Указать на карте
+              </button>
+            </div>
+            {errors.address && <p className="error-text">⚠️ {errors.address}</p>}
+
+            {/* Мини-карта-заглушка */}
+            <div className="mini-map-preview">
+              <div className="mini-map-bg"></div>
+              <div className="mini-map-pin">📍</div>
+              <div className="mini-map-city">
+                <span>📍</span> Казань
+              </div>
             </div>
 
-            <div className="form-group">
-              <label>Район (публичный)</label>
-              <input
-                className="form-input"
-                name="district"
-                placeholder="Например, Вахитовский район"
-                value={formData.district}
-                onChange={handleChange}
-              />
-            </div>
-          </>
+            <p className="hint-text-with-icon">
+              <span className="hint-icon">ⓘ</span>
+              Укажите примерное место — точный адрес увидят только после
+              подтверждения участия.
+            </p>
+          </div>
         )}
 
+        {/* Лимит участников */}
         <div className="form-group">
           <label>Лимит участников</label>
-          <input
-            className="form-input"
-            type="number"
-            name="limit"
-            placeholder="Например, 10"
-            value={formData.limit}
-            onChange={handleChange}
-          />
+          <div className="limit-row">
+            <div className="input-with-icon">
+              <span className="input-icon">👥</span>
+              <input
+                type="number"
+                name="limit"
+                placeholder="Например, 20"
+                value={formData.limit}
+                onChange={handleChange}
+              />
+            </div>
+            <span className="limit-hint">
+              Оставьте пустым,
+              <br />
+              если нет ограничений
+            </span>
+          </div>
         </div>
 
+        {/* Описание */}
         <div className="form-group">
           <label>Описание</label>
-          <textarea
-            className={`form-input ${errors.description ? 'error' : ''}`}
-            name="description"
-            rows="4"
-            placeholder="Расскажите подробнее: что будет, для кого, какая атмосфера?"
-            value={formData.description}
-            onChange={handleChange}
-            maxLength={1000}
-          ></textarea>
+          <div className={`textarea-with-icon ${errors.description ? 'error' : ''}`}>
+            <span className="textarea-icon">📄</span>
+            <textarea
+              name="description"
+              rows="5"
+              maxLength={1000}
+              placeholder="Расскажите подробнее о событии...&#10;Что будет, для кого, какая атмосфера?"
+              value={formData.description}
+              onChange={handleChange}
+            />
+          </div>
           <p className="char-counter">{formData.description.length}/1000</p>
-          {errors.description && <p className="error-text">⚠️ {errors.description}</p>}
+          {errors.description && (
+            <p className="error-text">⚠️ {errors.description}</p>
+          )}
         </div>
 
-        <div className="form-group">
-          <label>Ссылка на картинку (опционально)</label>
-          <input
-            className={`form-input ${errors.image ? 'error' : ''}`}
-            name="image"
-            placeholder="https://..."
-            value={formData.image}
-            onChange={handleChange}
-          />
-          {errors.image && <p className="error-text">⚠️ {errors.image}</p>}
-        </div>
-
+        {/* Согласие */}
         <div className="checkbox-group">
           <input
             type="checkbox"
@@ -254,18 +310,19 @@ const CreateEventForm = ({ onCreate, onCancel, userId, userName }) => {
             onChange={(e) => setPublicPlaceConfirmed(e.target.checked)}
           />
           <label htmlFor="publicPlace">
-            Я подтверждаю, что мероприятие проходит в общественном месте и не нарушает закон
+            Подтверждаю, что мероприятие проходит в общественном месте
           </label>
         </div>
-        {errors.publicPlace && <p className="error-text">⚠️ {errors.publicPlace}</p>}
+        {errors.publicPlace && (
+          <p className="error-text">⚠️ {errors.publicPlace}</p>
+        )}
 
-        {errors.submit && <p className="error-text submit-error">⚠️ {errors.submit}</p>}
+        {errors.submit && (
+          <p className="error-text submit-error">⚠️ {errors.submit}</p>
+        )}
 
-        <button type="submit" className="primary-btn" disabled={submitting}>
+        <button type="submit" className="submit-btn-v2" disabled={submitting}>
           {submitting ? 'Создаём...' : 'Создать событие'}
-        </button>
-        <button type="button" className="secondary-btn" onClick={onCancel}>
-          Отмена
         </button>
       </form>
     </div>

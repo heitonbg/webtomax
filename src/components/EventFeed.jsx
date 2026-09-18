@@ -1,7 +1,14 @@
 import React from 'react';
 import EventCard from './EventCard';
 
-const EventFeed = ({ events, onJoin, onEventClick, joinedIds }) => {
+const EventFeed = ({
+  events,
+  onJoin,
+  onEventClick,
+  joinedIds,
+  likedIds,
+  onToggleLike
+}) => {
   if (!events.length) {
     return (
       <div className="empty-state">
@@ -21,6 +28,8 @@ const EventFeed = ({ events, onJoin, onEventClick, joinedIds }) => {
           onJoin={onJoin}
           onClick={onEventClick}
           isJoined={joinedIds.includes(event.id)}
+          isLiked={likedIds.includes(event.id)}
+          onToggleLike={onToggleLike}
         />
       ))}
     </div>

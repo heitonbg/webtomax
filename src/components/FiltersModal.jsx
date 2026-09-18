@@ -39,15 +39,17 @@ const FiltersModal = ({ onClose, onApply, initialFilters }) => {
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-content filters-modal-v2" onClick={(e) => e.stopPropagation()}>
+        <div className="filters-handle" />
         <div className="modal-header">
           <h2>Фильтры</h2>
           <button onClick={onClose} className="close-btn">✕</button>
         </div>
 
-        <div className="filter-group">
-          <label>Когда</label>
-          <div className="chips-row">
+        <div className="filter-row-v2">
+          <span className="filter-icon">🕐</span>
+          <span className="filter-label">Когда</span>
+          <div className="filter-chips">
             {['Сейчас', 'Сегодня', 'Завтра'].map((t) => (
               <button
                 key={t}
@@ -60,9 +62,10 @@ const FiltersModal = ({ onClose, onApply, initialFilters }) => {
           </div>
         </div>
 
-        <div className="filter-group">
-          <label>Расстояние</label>
-          <div className="chips-row">
+        <div className="filter-row-v2">
+          <span className="filter-icon">📍</span>
+          <span className="filter-label">Расстояние</span>
+          <div className="filter-chips">
             {['до 1 км', 'до 3 км', 'до 5 км'].map((d) => (
               <button
                 key={d}
@@ -75,10 +78,11 @@ const FiltersModal = ({ onClose, onApply, initialFilters }) => {
           </div>
         </div>
 
-        <div className="filter-group">
-          <label>Категория</label>
-          <div className="chips-row">
-            {['Спорт', 'Культура', 'Настольные игры', 'Кино'].map((c) => (
+        <div className="filter-row-v2">
+          <span className="filter-icon">⊞</span>
+          <span className="filter-label">Категория</span>
+          <div className="filter-chips">
+            {['Спорт', 'Культура', 'Настолки', 'Кино'].map((c) => (
               <button
                 key={c}
                 className={`chip ${filters.category.includes(c) ? 'active' : ''}`}
@@ -90,9 +94,10 @@ const FiltersModal = ({ onClose, onApply, initialFilters }) => {
           </div>
         </div>
 
-        <div className="filter-group">
-          <label>Формат</label>
-          <div className="chips-row">
+        <div className="filter-row-v2">
+          <span className="filter-icon">👥</span>
+          <span className="filter-label">Формат</span>
+          <div className="filter-chips">
             {['Онлайн', 'Офлайн'].map((f) => (
               <button
                 key={f}
@@ -105,9 +110,10 @@ const FiltersModal = ({ onClose, onApply, initialFilters }) => {
           </div>
         </div>
 
-        <div className="filter-group">
-          <label>Стоимость</label>
-          <div className="chips-row">
+        <div className="filter-row-v2">
+          <span className="filter-icon">🏷️</span>
+          <span className="filter-label">Стоимость</span>
+          <div className="filter-chips">
             {['Бесплатно', 'Платно'].map((p) => (
               <button
                 key={p}
@@ -120,21 +126,35 @@ const FiltersModal = ({ onClose, onApply, initialFilters }) => {
           </div>
         </div>
 
-        <div className="pushkin-toggle">
-          <span>Пушкинская карта</span>
+        <div className="pushkin-toggle-v2">
+          <div className="pushkin-info">
+            <div className="pushkin-icon">🎭</div>
+            <div>
+              <div className="pushkin-title">Пушкинская карта</div>
+              <div className="pushkin-subtitle">
+                Показывать события, доступные по Пушкинской карте
+              </div>
+            </div>
+          </div>
           <label className="switch">
             <input
               type="checkbox"
               checked={filters.pushkinCard}
-              onChange={() => setFilters({ ...filters, pushkinCard: !filters.pushkinCard })}
+              onChange={() =>
+                setFilters({ ...filters, pushkinCard: !filters.pushkinCard })
+              }
             />
             <span className="slider"></span>
           </label>
         </div>
 
         <div className="modal-actions">
-          <button className="reset-btn" onClick={handleReset}>Сбросить</button>
-          <button className="apply-btn" onClick={handleApply}>Применить</button>
+          <button className="reset-btn" onClick={handleReset}>
+            Сбросить
+          </button>
+          <button className="apply-btn" onClick={handleApply}>
+            Показать события
+          </button>
         </div>
       </div>
     </div>
