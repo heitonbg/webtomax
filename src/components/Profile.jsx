@@ -90,17 +90,18 @@ const Profile = ({ user, joinedIds, createdCount, onLogout }) => {
           <span>{showAbout ? '▼' : '▶'}</span>
         </button>
 
-        {showAbout && (
-          <div className="about-text">
-            <p>
-              <strong>MAX Events</strong> — сервис для поиска и создания
-              досуговых событий: спорт, настолки, культура, кино.
-            </p>
-            <p>Версия: 1.0.0 (MVP)</p>
-            <p>Обработка данных: 152-ФЗ</p>
-            <p>Модерация контента: активна</p>
-          </div>
-        )}
+{showAbout && (
+  <div className="about-text">
+    <p>
+      <strong>MAX Events</strong> — сервис для поиска и создания
+      досуговых событий: спорт, настолки, культура, кино.
+    </p>
+    <p>Версия: 1.0.0 (MVP)</p>
+    <p>Разработчик: команда <strong>neutralname</strong></p>
+    <p>Обработка данных: 152-ФЗ</p>
+    <p>Модерация контента: активна</p>
+  </div>
+)}
       </div>
 
       {/* Юридическая информация */}
@@ -120,9 +121,9 @@ const Profile = ({ user, joinedIds, createdCount, onLogout }) => {
         Выйти
       </button>
 
-      <p className="profile-footer">
-        © 2025 MAX Events · Сделано с ❤️ на хакатоне
-      </p>
+        <p className="profile-footer">
+        © 2026 MAX Events · Команда <strong>neutralname</strong>
+        </p>
     </div>
   );
 };
