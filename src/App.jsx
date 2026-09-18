@@ -16,7 +16,6 @@ import { haversineDistance, formatDistance } from './utils/distance';
 import './App.css';
 
 function App() {
-  // ===== Состояние =====
   const [consent, setConsent] = useState(
     () => localStorage.getItem('max_events_consent') === 'true'
   );
@@ -34,7 +33,6 @@ function App() {
 
   const quickFilters = ['Сегодня', 'Бесплатно', 'Спорт', 'Культура', 'Онлайн'];
 
-  // ===== Инициализация =====
   useEffect(() => {
     maxBridge.init();
     const u = maxBridge.getUser();
@@ -66,7 +64,6 @@ function App() {
     }
   };
 
-  // ===== Фильтрация =====
   const filteredEvents = useMemo(() => {
     let result = [...events];
 
@@ -117,14 +114,12 @@ function App() {
         }
         return { ...e, _distanceValue: 999 };
       });
-
       result.sort((a, b) => a._distanceValue - b._distanceValue);
     }
 
     return result;
   }, [events, searchQuery, quickFilter, filters, userCoords]);
 
-  // ===== Обработчики =====
   const handleConsent = () => {
     localStorage.setItem('max_events_consent', 'true');
     setConsent(true);
@@ -165,9 +160,7 @@ function App() {
     maxBridge.showAlert(`🎉 Событие "${created.title}" создано!`);
   };
 
-  const handleEventClick = (event) => {
-    setSelectedEvent(event);
-  };
+  const handleEventClick = (event) => setSelectedEvent(event);
 
   const handleApplyFilters = (f) => {
     setFilters(f);
@@ -179,20 +172,18 @@ function App() {
     setConsent(false);
   };
 
-  // ===== Экран согласия =====
   if (!consent) {
     return <ConsentScreen onAccept={handleConsent} />;
   }
 
-  const isFeedOrMap = activeTab === 'feed' || activeTab === 'map';
+  const isExploreTab = activeTab === 'feed' || activeTab === 'map';
 
   return (
     <div className="app-container">
       <DesktopSidebar activeTab={activeTab} setActiveTab={setActiveTab} />
 
       <div className="main-content">
-        {/* ===== Верхняя часть (заголовок, поиск, табы, фильтры) ===== */}
-        {isFeedOrMap && (
+        {isExploreTab && (
           <>
             <div className="mobile-header">
               <h1>События рядом</h1>
@@ -238,23 +229,36 @@ function App() {
           </>
         )}
 
-        {/* ===== Контент ===== */}
+        {/* Контент: на ПК лента+карта рядом, на мобиле — одна вкладка */}
         <div className="content-area">
           {loading ? (
             <EventSkeletonList count={3} />
           ) : (
             <>
-              {activeTab === 'feed' && (
-                <EventFeed
-                  events={filteredEvents}
-                  onJoin={handleJoinEvent}
-                  onEventClick={handleEventClick}
-                  joinedIds={joinedIds}
-                />
-              )}
+              {isExploreTab && (
+                <div className="split-view">
+                  {/* Лента */}
+                  {(activeTab === 'feed' || window.innerWidth >= 1200) && (
+                    <div className="split-pane split-feed">
+                      <EventFeed
+                        events={filteredEvents}
+                        onJoin={handleJoinEvent}
+                        onEventClick={handleEventClick}
+                        joinedIds={joinedIds}
+                      />
+                    </div>
+                  )}
 
-              {activeTab === 'map' && (
-                <EventMap events={filteredEvents} onJoin={handleJoinEvent} />
+                  {/* Карта — на ПК всегда, на мобиле только во вкладке "Карта" */}
+                  {activeTab === 'map' && (
+                    <div className="split-pane split-map">
+                      <EventMap
+                        events={filteredEvents}
+                        onJoin={handleJoinEvent}
+                      />
+                    </div>
+                  )}
+                </div>
               )}
 
               {activeTab === 'create' && (
@@ -293,7 +297,6 @@ function App() {
           )}
         </div>
 
-        {/* ===== Нижняя навигация (только на мобильных) ===== */}
         <div className="bottom-nav">
           <button
             onClick={() => setActiveTab('feed')}
@@ -320,7 +323,6 @@ function App() {
         </div>
       </div>
 
-      {/* ===== Модальные окна ===== */}
       {isFiltersOpen && (
         <FiltersModal
           onClose={() => setIsFiltersOpen(false)}
