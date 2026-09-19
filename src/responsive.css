@@ -214,3 +214,52 @@
   line-height: 1.3;
   box-shadow: none;
 }
+
+/* Sort chips */
+.sort-row { display: flex; gap: 8px; margin-bottom: 10px; overflow-x: auto; scrollbar-width: none; }
+.sort-row::-webkit-scrollbar { display: none; }
+.sort-chip {
+  flex: 0 0 auto; padding: 8px 14px; border-radius: 14px; background: #f1f4f8;
+  color: #44526a; font-size: 13px; font-weight: 600; border: 0; cursor: pointer;
+}
+.sort-chip.active { background: #dceaff; color: #0877f9; }
+
+/* Filter badge */
+.filter-btn { position: relative; }
+.filter-badge {
+  position: absolute; top: -4px; right: -4px; min-width: 18px; height: 18px;
+  padding: 0 5px; border-radius: 9px; background: #ff3b30; color: #fff;
+  font-size: 10px; font-weight: 700; display: grid; place-items: center;
+  border: 2px solid #fff;
+}
+
+/* Toast stack */
+.toast-stack {
+  position: fixed; z-index: 2700; left: 50%; bottom: 88px;
+  width: min(420px, calc(100% - 32px)); transform: translateX(-50%);
+  display: flex; flex-direction: column; gap: 8px; pointer-events: none;
+}
+.toast-stack .toast {
+  position: static; transform: none; pointer-events: auto;
+  animation: toastIn .2s ease-out;
+}
+.toast.toast-error { background: #b3261e; }
+.toast.toast-info { background: #1f2f48; }
+
+/* Related */
+.related-list { display: grid; gap: 8px; margin-top: 8px; }
+.related-card {
+  display: flex; gap: 10px; align-items: center; padding: 8px;
+  border-radius: 12px; background: #f7f9fc; border: 1px solid #edf0f4;
+  text-align: left; cursor: pointer;
+}
+.related-card img { width: 56px; height: 44px; border-radius: 8px; object-fit: cover; }
+.related-card span { display: grid; gap: 2px; min-width: 0; }
+.related-card strong { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.related-card small { color: #7b899d; font-size: 11px; }
+
+/* Disabled primary */
+.primary-btn:disabled, .join-btn-small:disabled { opacity: .55; cursor: not-allowed; }
+
+/* Owner dropdown edit */
+.event-owner-dropdown button + button { border-top: 1px solid #f1f4f8; border-radius: 0; }

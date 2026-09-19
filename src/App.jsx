@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import DesktopSidebar from './components/DesktopSidebar';
 import SearchBar from './components/SearchBar';
 import EventFeed from './components/EventFeed';
@@ -10,16 +10,18 @@ import MyEvents from './components/MyEvents';
 import Profile from './components/Profile';
 import Icon from './components/Icon';
 import { EventSkeletonList } from './components/EventSkeleton';
-import { fetchEvents, createEvent, joinEvent, leaveEvent, deleteEvent } from './api/events';
+import {
+  fetchEvents, fetchJoinedIds, createEvent, updateEvent,
+  joinEvent, leaveEvent, deleteEvent
+} from './api/events';
 import { isEventOwner } from './utils/eventOwnership';
 import DeleteEventDialog from './components/DeleteEventDialog';
 import { maxBridge } from './utils/maxBridge';
 import { haversineDistance, formatDistance } from './utils/distance';
+import { storage } from './utils/storage';
 import './App.css';
 
 function App() {
-  // The prototype opens straight into the product flow. Consent can be added
-  // back when the real MAX identity and privacy flow are connected.
   const [activeTab, setActiveTab] = useState('feed');
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -28,11 +30,11 @@ function App() {
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [filters, setFilters] = useState(null);
   const [selectedEvent, setSelectedEvent] = useState(null);
-  const [joinedIds, setJoinedIds] = useState([]);
-  const [likedIds, setLikedIds] = useState([]);
+  const [joinedIds, setJoinedIds] = useState(() => storage.getJoined());
+  const [likedIds, setLikedIds] = useState(() => storage.getLiked());
   const [user, setUser] = useState(null);
   const [userCoords, setUserCoords] = useState(null);
-  const [toast, setToast] = useState(null);
+  const [toasts, setToasts] = useState([]);
   const [lastCreatedEventId, setLastCreatedEventId] = useState(null);
   const [selectedCity, setSelectedCity] = useState('Казань');
   const [isCityOpen, setIsCityOpen] = useState(false);
@@ -40,7 +42,19 @@ function App() {
   const [pendingDelete, setPendingDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState('');
+  const [editingEvent, setEditingEvent] = useState(null);
+  const [sortBy, setSortBy] = useState(() => storage.getSort());
+  const [notificationsOn, setNotificationsOn] = useState(() => storage.getNotifications());
+  const [pendingActions, setPendingActions] = useState({});
   const userId = user?.id ?? 'guest';
+
+  const pushToast = useCallback((text, variant = 'success') => {
+    const id = Date.now() + Math.random();
+    setToasts((prev) => [...prev, { id, text, variant }]);
+    window.setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 3200);
+  }, []);
 
   const requestDelete = (event) => {
     if (!isEventOwner(event, userId)) return;
@@ -52,28 +66,37 @@ function App() {
     if (!pendingDelete || deleting || !isEventOwner(pendingDelete, userId)) return;
     setDeleting(true);
     setDeleteError('');
+    setPendingActions((p) => ({ ...p, [pendingDelete.id]: 'delete' }));
     try {
       await deleteEvent(pendingDelete.id, userId);
       const id = pendingDelete.id;
       setEvents((items) => items.filter((item) => item.id !== id));
       setJoinedIds((ids) => ids.filter((item) => item !== id));
       setLikedIds((ids) => ids.filter((item) => item !== id));
-      setSelectedEvent((event) => event?.id === id ? null : event);
-      setLastCreatedEventId((previous) => previous === id ? null : previous);
+      setSelectedEvent((event) => (event?.id === id ? null : event));
+      setLastCreatedEventId((previous) => (previous === id ? null : previous));
       setPendingDelete(null);
-      setToast('Событие удалено');
+      pushToast('Событие удалено');
     } catch (error) {
       setDeleteError(error.message || 'Не удалось удалить событие. Попробуйте ещё раз.');
     } finally {
       setDeleting(false);
+      setPendingActions((p) => {
+        const next = { ...p };
+        delete next[pendingDelete?.id];
+        return next;
+      });
     }
   };
-
-  const quickFilters = ['Сегодня', 'Бесплатно', 'Спорт', 'Культура', 'Онлайн'];
 
   const track = (eventName, payload = {}) => {
     console.info('[MVP analytics]', eventName, payload);
   };
+
+  useEffect(() => { storage.setJoined(joinedIds); }, [joinedIds]);
+  useEffect(() => { storage.setLiked(likedIds); }, [likedIds]);
+  useEffect(() => { storage.setSort(sortBy); }, [sortBy]);
+  useEffect(() => { storage.setNotifications(notificationsOn); }, [notificationsOn]);
 
   useEffect(() => {
     maxBridge.init();
@@ -82,24 +105,35 @@ function App() {
 
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        (pos) =>
-          setUserCoords({
-            lat: pos.coords.latitude,
-            lng: pos.coords.longitude
-          }),
+        (pos) => setUserCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
         () => console.log('Геолокация недоступна')
       );
     }
 
     loadEvents();
-    track('feed_opened');
-  }, []);
 
-  useEffect(() => {
-    if (!toast) return undefined;
-    const timer = window.setTimeout(() => setToast(null), 3200);
-    return () => window.clearTimeout(timer);
-  }, [toast]);
+    fetchJoinedIds(userId)
+      .then((ids) => {
+        if (Array.isArray(ids) && ids.length) {
+          setJoinedIds((prev) => Array.from(new Set([...prev, ...ids])));
+        }
+      })
+      .catch(() => {});
+
+    const startParam = maxBridge.getStartParam?.();
+    if (startParam?.startsWith('event_')) {
+      const id = Number(startParam.replace('event_', ''));
+      if (Number.isFinite(id)) {
+        setTimeout(() => {
+          const ev = events.find((e) => e.id === id);
+          if (ev) setSelectedEvent(ev);
+        }, 400);
+      }
+    }
+
+    track('feed_opened');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const loadEvents = async () => {
     try {
@@ -108,10 +142,29 @@ function App() {
       setEvents(data);
     } catch (e) {
       console.error(e);
+      pushToast('Не удалось загрузить события', 'error');
     } finally {
       setLoading(false);
     }
   };
+
+  const quickFilters = useMemo(() => {
+    const base = ['Сегодня', 'Бесплатно', 'Онлайн'];
+    const cats = [...new Set(events.map((e) => e.category).filter(Boolean))];
+    return [...base, ...cats];
+  }, [events]);
+
+  const activeFiltersCount = useMemo(() => {
+    if (!filters) return 0;
+    let count = 0;
+    if (filters.category?.length) count += filters.category.length;
+    if (filters.price) count += 1;
+    if (filters.format) count += 1;
+    if (filters.time) count += 1;
+    if (filters.distance) count += 1;
+    if (filters.pushkinCard) count += 1;
+    return count;
+  }, [filters]);
 
   const filteredEvents = useMemo(() => {
     let result = [...events];
@@ -119,11 +172,10 @@ function App() {
 
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
-      result = result.filter(
-        (e) =>
-          e.title.toLowerCase().includes(q) ||
-          e.description.toLowerCase().includes(q) ||
-          e.category.toLowerCase().includes(q)
+      result = result.filter((e) =>
+        [e.title, e.description, e.category, e.address, e.district, e.organizer?.name]
+          .filter(Boolean)
+          .some((f) => String(f).toLowerCase().includes(q))
       );
     }
 
@@ -132,7 +184,7 @@ function App() {
     } else if (quickFilter === 'Бесплатно') {
       result = result.filter((e) => e.price === 'Бесплатно');
     } else if (quickFilter === 'Онлайн') {
-      result = result.filter((e) => e.district === 'Онлайн');
+      result = result.filter((e) => e.district === 'Онлайн' || e.format === 'Онлайн');
     } else if (quickFilter) {
       result = result.filter((e) => e.category === quickFilter);
     }
@@ -151,58 +203,68 @@ function App() {
           filters.price === 'Платно' ? e.price !== 'Бесплатно' : e.price === filters.price
         );
       }
-      if (filters.format === 'Онлайн') {
-        result = result.filter(isOnline);
-      } else if (filters.format === 'Офлайн') {
-        result = result.filter((e) => !isOnline(e));
-      }
-      if (filters.time) {
-        result = result.filter((e) => e.date.includes(filters.time));
-      }
+      if (filters.format === 'Онлайн') result = result.filter(isOnline);
+      else if (filters.format === 'Офлайн') result = result.filter((e) => !isOnline(e));
+      if (filters.time) result = result.filter((e) => e.date.includes(filters.time));
       if (filters.distance) {
         const maxDistance = Number.parseFloat(filters.distance.replace(/[^0-9.]/g, ''));
         result = result.filter((e) => parseDistance(e.distance) <= maxDistance);
       }
-      if (filters.pushkinCard) {
-        result = result.filter((e) => e.price === 'Пушкинская карта');
-      }
+      if (filters.pushkinCard) result = result.filter((e) => e.price === 'Пушкинская карта');
     }
 
     if (userCoords) {
       result = result.map((e) => {
         if (e.lat && e.lng) {
-          const dist = haversineDistance(
-            userCoords.lat,
-            userCoords.lng,
-            e.lat,
-            e.lng
-          );
+          const dist = haversineDistance(userCoords.lat, userCoords.lng, e.lat, e.lng);
           return { ...e, distance: formatDistance(dist), _distanceValue: dist };
         }
         return { ...e, _distanceValue: 999 };
       });
-      result.sort((a, b) => a._distanceValue - b._distanceValue);
+    } else {
+      result = result.map((e) => ({ ...e, _distanceValue: 999 }));
+    }
+
+    switch (sortBy) {
+      case 'popular':
+        result.sort((a, b) => (b.participants || 0) - (a.participants || 0));
+        break;
+      case 'new':
+        result.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+        break;
+      case 'distance':
+      default:
+        result.sort((a, b) => a._distanceValue - b._distanceValue);
     }
 
     return result;
-  }, [events, searchQuery, quickFilter, filters, userCoords, selectedCity]);
+  }, [events, searchQuery, quickFilter, filters, userCoords, selectedCity, sortBy]);
 
   const handleJoinEvent = async (event) => {
     if (isEventOwner(event, userId) || joinedIds.includes(event.id)) return;
+    if (pendingActions[event.id]) return;
+    if (event.maxParticipants && event.participants >= event.maxParticipants) {
+      pushToast('Мест больше нет', 'error');
+      return;
+    }
+
+    setPendingActions((p) => ({ ...p, [event.id]: 'join' }));
+    setJoinedIds((ids) => [...ids, event.id]);
+    setEvents((prev) => prev.map((e) =>
+      e.id === event.id ? { ...e, participants: e.participants + 1 } : e
+    ));
 
     try {
       maxBridge.haptic('medium');
-      await joinEvent(event.id, user?.id || 'guest');
-      setJoinedIds((prev) => [...prev, event.id]);
-      setEvents((prev) =>
-        prev.map((e) =>
-          e.id === event.id ? { ...e, participants: e.participants + 1 } : e
-        )
-      );
-      setSelectedEvent((prev) =>
-        prev?.id === event.id ? { ...prev, participants: prev.participants + 1 } : prev
-      );
-      track('join_clicked', { eventId: event.id });
+      const res = await joinEvent(event.id, userId);
+      if (typeof res.participants === 'number') {
+        setEvents((prev) => prev.map((e) =>
+          e.id === event.id ? { ...e, participants: res.participants } : e
+        ));
+        setSelectedEvent((prev) =>
+          prev?.id === event.id ? { ...prev, participants: res.participants } : prev
+        );
+      }
       track('join_success', { eventId: event.id });
       maxBridge.sendData({
         action: 'join_event',
@@ -210,42 +272,94 @@ function App() {
         eventTitle: event.title,
         eventTime: event.eventTime || null
       });
-      setToast(`Вы участвуете: «${event.title}»`);
+      pushToast(`Вы участвуете: «${event.title}»`);
     } catch (e) {
-      maxBridge.showAlert('Не удалось присоединиться');
+      setJoinedIds((ids) => ids.filter((id) => id !== event.id));
+      setEvents((prev) => prev.map((ev) =>
+        ev.id === event.id ? { ...ev, participants: Math.max(0, ev.participants - 1) } : ev
+      ));
+      pushToast(e.message || 'Не удалось присоединиться', 'error');
+    } finally {
+      setPendingActions((p) => {
+        const next = { ...p };
+        delete next[event.id];
+        return next;
+      });
+    }
+  };
+
+  const handleLeaveEvent = async (event) => {
+    if (isEventOwner(event, userId) || !joinedIds.includes(event.id)) return;
+    if (pendingActions[event.id]) return;
+
+    setPendingActions((p) => ({ ...p, [event.id]: 'leave' }));
+    setJoinedIds((ids) => ids.filter((id) => id !== event.id));
+    setEvents((prev) => prev.map((e) =>
+      e.id === event.id ? { ...e, participants: Math.max(0, e.participants - 1) } : e
+    ));
+
+    try {
+      const res = await leaveEvent(event.id, userId);
+      if (typeof res.participants === 'number') {
+        setEvents((prev) => prev.map((e) =>
+          e.id === event.id ? { ...e, participants: res.participants } : e
+        ));
+        setSelectedEvent((prev) =>
+          prev?.id === event.id ? { ...prev, participants: res.participants } : prev
+        );
+      }
+      pushToast(`Вы отменили участие: «${event.title}»`);
+    } catch (e) {
+      setJoinedIds((ids) => [...ids, event.id]);
+      setEvents((prev) => prev.map((ev) =>
+        ev.id === event.id ? { ...ev, participants: ev.participants + 1 } : ev
+      ));
+      pushToast(e.message || 'Не удалось отменить участие', 'error');
+    } finally {
+      setPendingActions((p) => {
+        const next = { ...p };
+        delete next[event.id];
+        return next;
+      });
     }
   };
 
   const handleToggleLike = (eventId) => {
     setLikedIds((prev) =>
-      prev.includes(eventId)
-        ? prev.filter((id) => id !== eventId)
-        : [...prev, eventId]
+      prev.includes(eventId) ? prev.filter((id) => id !== eventId) : [...prev, eventId]
     );
   };
 
-  const handleCreateEvent = async (newEvent) => {
-    const created = await createEvent(newEvent);
-    setEvents((prev) => [created, ...prev]);
-    setLastCreatedEventId(created.id);
-    setActiveTab('my');
-    track('event_created', { title: created.title });
-    maxBridge.haptic('success');
-    maxBridge.sendData({ action: 'create_event', title: created.title });
-    setToast(`Событие «${created.title}» создано`);
+  const handleCreateEvent = async (newEvent, editingId) => {
+    try {
+      if (editingId) {
+        const updated = await updateEvent(editingId, newEvent, userId);
+        setEvents((prev) => prev.map((e) => (e.id === editingId ? updated : e)));
+        setSelectedEvent((prev) => (prev?.id === editingId ? updated : prev));
+        setEditingEvent(null);
+        setActiveTab('my');
+        pushToast(`Событие «${updated.title}» обновлено`);
+        return;
+      }
+      const created = await createEvent(newEvent);
+      setEvents((prev) => [created, ...prev]);
+      setLastCreatedEventId(created.id);
+      setActiveTab('my');
+      track('event_created', { title: created.title });
+      maxBridge.haptic('success');
+      maxBridge.sendData({ action: 'create_event', title: created.title });
+      pushToast(`Событие «${created.title}» создано`);
+    } catch (error) {
+      pushToast(error.message || 'Не удалось сохранить событие', 'error');
+      throw error;
+    }
   };
 
-  const handleLeaveEvent = async (event) => {
-    if (isEventOwner(event, userId) || !joinedIds.includes(event.id)) return;
-    try {
-      await leaveEvent(event.id, user?.id || 'guest');
-      setJoinedIds((prev) => prev.filter((id) => id !== event.id));
-      setEvents((prev) => prev.map((item) => item.id === event.id ? { ...item, participants: Math.max(0, item.participants - 1) } : item));
-      setSelectedEvent((prev) => prev?.id === event.id ? { ...prev, participants: Math.max(0, prev.participants - 1) } : prev);
-      setToast(`Вы отменили участие: «${event.title}»`);
-    } catch (e) {
-      setToast('Не удалось отменить участие. Попробуйте ещё раз.');
-    }
+  const handleEditEvent = (event) => {
+    if (!isEventOwner(event, userId)) return;
+    setEditingEvent(event);
+    setSelectedEvent(null);
+    setActiveTab('create');
   };
 
   const handleEventClick = (event) => {
@@ -259,9 +373,15 @@ function App() {
   };
 
   const handleOpenChat = (event) => {
-    // MAX group chat creation will be connected here when the bot API is ready.
     track('chat_opened', { eventId: event.id });
-    setToast(`Чат «${event.title}» откроется в MAX после подключения бота`);
+    pushToast(`Чат «${event.title}» откроется в MAX после подключения бота`, 'info');
+  };
+
+  const handleCityChange = (city) => {
+    setSelectedCity(city);
+    setIsCityOpen(false);
+    setQuickFilter(null);
+    setFilters(null);
   };
 
   const isExploreTab = activeTab === 'feed' || activeTab === 'map';
@@ -274,20 +394,31 @@ function App() {
         {isExploreTab && (
           <>
             <div className="mobile-header">
-              <div className="mobile-title-row"><h1>
-                События рядом <button className="header-location" onClick={() => setIsCityOpen(true)}><span className="pin"><Icon name="pin" size={17} filled /></span>{selectedCity}<span className="chevron"><Icon name="chevronDown" size={14} /></span></button>
-              </h1><button className={`header-more ${isMenuOpen ? 'active' : ''}`} onClick={() => setIsMenuOpen((value) => !value)} aria-label="Меню"><Icon name="more" size={24} /></button></div>
-              {user && (
-                <p className="greeting">
-                  Больше, чем просто планы
-                </p>
-              )}
+              <div className="mobile-title-row">
+                <h1>
+                  События рядом{' '}
+                  <button className="header-location" onClick={() => setIsCityOpen(true)}>
+                    <span className="pin"><Icon name="pin" size={17} filled /></span>
+                    {selectedCity}
+                    <span className="chevron"><Icon name="chevronDown" size={14} /></span>
+                  </button>
+                </h1>
+                <button
+                  className={`header-more ${isMenuOpen ? 'active' : ''}`}
+                  onClick={() => setIsMenuOpen((v) => !v)}
+                  aria-label="Меню"
+                >
+                  <Icon name="more" size={24} />
+                </button>
+              </div>
+              {user && <p className="greeting">Больше, чем просто планы</p>}
             </div>
 
             <SearchBar
               value={searchQuery}
               onChange={setSearchQuery}
               onOpenFilters={() => setIsFiltersOpen(true)}
+              activeFiltersCount={activeFiltersCount}
             />
 
             <div className="tabs-row">
@@ -305,7 +436,16 @@ function App() {
               </button>
             </div>
 
-            <div className="quick-filters" tabIndex="0" onWheel={(event) => { if (Math.abs(event.deltaY) > Math.abs(event.deltaX)) { event.preventDefault(); event.currentTarget.scrollLeft += event.deltaY; } }}>
+            <div
+              className="quick-filters"
+              tabIndex="0"
+              onWheel={(event) => {
+                if (Math.abs(event.deltaY) > Math.abs(event.deltaX)) {
+                  event.preventDefault();
+                  event.currentTarget.scrollLeft += event.deltaY;
+                }
+              }}
+            >
               {quickFilters.map((f) => (
                 <button
                   key={f}
@@ -335,8 +475,14 @@ function App() {
                   joinedIds={joinedIds}
                   likedIds={likedIds}
                   onToggleLike={handleToggleLike}
+                  pendingActions={pendingActions}
+                  sortBy={sortBy}
+                  onSortChange={setSortBy}
+                  activeFiltersCount={activeFiltersCount}
+                  onResetFilters={() => { setFilters(null); setQuickFilter(null); }}
                   onCreate={() => {
                     track('create_started', { source: 'empty_feed' });
+                    setEditingEvent(null);
                     setActiveTab('create');
                   }}
                 />
@@ -354,22 +500,25 @@ function App() {
                   likedIds={likedIds}
                   onToggleLike={handleToggleLike}
                   city={selectedCity}
+                  userCoords={userCoords}
                 />
               )}
 
               {activeTab === 'create' && (
                 <CreateEventForm
                   onCreate={handleCreateEvent}
-                  onCancel={() => setActiveTab('feed')}
+                  onCancel={() => { setEditingEvent(null); setActiveTab('feed'); }}
                   userId={user?.id || 'guest'}
                   userName={user?.first_name || user?.name}
                   city={selectedCity}
+                  initialEvent={editingEvent}
                 />
               )}
 
               {activeTab === 'my' && (
                 <MyEvents
                   onDelete={requestDelete}
+                  onEdit={handleEditEvent}
                   events={events}
                   onJoin={handleJoinEvent}
                   onLeave={handleLeaveEvent}
@@ -386,13 +535,10 @@ function App() {
                 <Profile
                   user={user}
                   joinedIds={joinedIds}
-                  createdCount={
-                    events.filter(
-                      (e) =>
-                        e.organizer && e.organizer.id === (user?.id || 'guest')
-                    ).length
-                  }
-                  onLogout={() => setToast('Профиль гостя остаётся активным в MVP')}
+                  createdCount={events.filter((e) => e.organizer && e.organizer.id === (user?.id || 'guest')).length}
+                  notificationsOn={notificationsOn}
+                  onToggleNotifications={setNotificationsOn}
+                  onLogout={() => pushToast('Профиль гостя остаётся активным в MVP', 'info')}
                 />
               )}
             </>
@@ -400,24 +546,18 @@ function App() {
         </div>
 
         <div className="bottom-nav">
-          <button
-            onClick={() => setActiveTab('feed')}
-            className={activeTab === 'feed' ? 'active' : ''}
-          >
+          <button onClick={() => setActiveTab('feed')} className={activeTab === 'feed' ? 'active' : ''}>
             <span className="icon"><Icon name="home" size={23} filled /></span>
             <span>Главная</span>
           </button>
           <button
-            onClick={() => setActiveTab('create')}
+            onClick={() => { setEditingEvent(null); setActiveTab('create'); }}
             onClickCapture={() => track('create_started', { source: 'navigation' })}
             className={`create-btn ${activeTab === 'create' ? 'active' : ''}`}
           >
             <span className="icon-plus"><Icon name="plus" size={34} /></span>
           </button>
-          <button
-            onClick={() => setActiveTab('my')}
-            className={activeTab === 'my' ? 'active' : ''}
-          >
+          <button onClick={() => setActiveTab('my')} className={activeTab === 'my' ? 'active' : ''}>
             <span className="icon"><Icon name="user" size={23} /></span>
             <span>Мои события</span>
           </button>
@@ -435,6 +575,7 @@ function App() {
       {selectedEvent && (
         <EventDetailModal
           onDelete={requestDelete}
+          onEdit={handleEditEvent}
           event={selectedEvent}
           onClose={() => setSelectedEvent(null)}
           onJoin={handleJoinEvent}
@@ -443,20 +584,71 @@ function App() {
           isJoined={joinedIds.includes(selectedEvent.id)}
           isLiked={likedIds.includes(selectedEvent.id)}
           onToggleLike={handleToggleLike}
-          userId={user?.id || 'guest'}
+          userId={userId}
+          relatedEvents={filteredEvents.filter((e) => e.id !== selectedEvent.id && e.category === selectedEvent.category).slice(0, 3)}
+          onRelatedClick={handleEventClick}
+          onShare={(ev) => {
+            const link = `https://max.ru/@t184_hakaton_bot?start=event_${ev.id}`;
+            maxBridge.shareContent({ text: `${ev.title}\n${ev.date}`, link });
+          }}
         />
       )}
 
-      {pendingDelete && <DeleteEventDialog event={pendingDelete} busy={deleting} error={deleteError} onCancel={() => setPendingDelete(null)} onConfirm={confirmDelete} />}
-
-      {toast && (
-        <button className="toast" onClick={() => setToast(null)}>
-          <span>✓</span> {toast}
-        </button>
+      {pendingDelete && (
+        <DeleteEventDialog
+          event={pendingDelete}
+          busy={deleting}
+          error={deleteError}
+          onCancel={() => setPendingDelete(null)}
+          onConfirm={confirmDelete}
+        />
       )}
 
-      {isCityOpen && <div className="app-sheet-overlay" onClick={() => setIsCityOpen(false)}><div className="app-sheet" onClick={(event) => event.stopPropagation()}><div className="app-sheet-head"><h2>Выберите город</h2><button onClick={() => setIsCityOpen(false)}><Icon name="close" size={22} /></button></div>{['Казань', 'Москва', 'Санкт-Петербург'].map((city) => <button className={`city-option ${selectedCity === city ? 'active' : ''}`} key={city} onClick={() => { setSelectedCity(city); setIsCityOpen(false); }}>{city}<span>{selectedCity === city ? '✓' : ''}</span></button>)}</div></div>}
-      {isMenuOpen && <div className="header-menu"><button onClick={() => { setActiveTab('my'); setIsMenuOpen(false); }}><Icon name="user" size={19} />Мои события</button><button onClick={() => { setActiveTab('profile'); setIsMenuOpen(false); }}><Icon name="grid" size={19} />О приложении</button><button onClick={() => setIsMenuOpen(false)}><Icon name="close" size={19} />Закрыть меню</button></div>}
+      <div className="toast-stack" aria-live="polite">
+        {toasts.map((t) => (
+          <button
+            key={t.id}
+            className={`toast toast-${t.variant}`}
+            onClick={() => setToasts((prev) => prev.filter((x) => x.id !== t.id))}
+          >
+            <span>{t.variant === 'error' ? '⚠' : t.variant === 'info' ? 'ℹ' : '✓'}</span> {t.text}
+          </button>
+        ))}
+      </div>
+
+      {isCityOpen && (
+        <div className="app-sheet-overlay" onClick={() => setIsCityOpen(false)}>
+          <div className="app-sheet" onClick={(e) => e.stopPropagation()}>
+            <div className="app-sheet-head">
+              <h2>Выберите город</h2>
+              <button onClick={() => setIsCityOpen(false)}><Icon name="close" size={22} /></button>
+            </div>
+            {['Казань', 'Москва', 'Санкт-Петербург'].map((city) => (
+              <button
+                className={`city-option ${selectedCity === city ? 'active' : ''}`}
+                key={city}
+                onClick={() => handleCityChange(city)}
+              >
+                {city}<span>{selectedCity === city ? '✓' : ''}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {isMenuOpen && (
+        <div className="header-menu">
+          <button onClick={() => { setActiveTab('my'); setIsMenuOpen(false); }}>
+            <Icon name="user" size={19} />Мои события
+          </button>
+          <button onClick={() => { setActiveTab('profile'); setIsMenuOpen(false); }}>
+            <Icon name="grid" size={19} />О приложении
+          </button>
+          <button onClick={() => setIsMenuOpen(false)}>
+            <Icon name="close" size={19} />Закрыть меню
+          </button>
+        </div>
+      )}
     </div>
   );
 }
