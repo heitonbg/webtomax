@@ -12,6 +12,7 @@ const EventDetailModal = ({
   onLeave,
   onDelete,
   onOpenChat,
+  onOpenOrganizer,
   isJoined,
   isLiked,
   onToggleLike,
@@ -30,7 +31,9 @@ const EventDetailModal = ({
     setPhotoIndex((index) => (index + direction + gallery.length) % gallery.length);
 
   const share = async () => {
-    const text = `${event.title}\n${event.date}\n${isJoined ? event.address : event.district}`;
+    const text = `${event.title}\n${event.date}\n${
+      isJoined ? event.address : event.district
+    }`;
     if (navigator.share) {
       try {
         await navigator.share({ title: event.title, text });
@@ -57,7 +60,11 @@ const EventDetailModal = ({
             alt={`${event.title}, фото ${photoIndex + 1}`}
             className="detail-image"
           />
-          <button onClick={onClose} className="hero-round-btn hero-back" aria-label="Назад">
+          <button
+            onClick={onClose}
+            className="hero-round-btn hero-back"
+            aria-label="Назад"
+          >
             <Icon name="arrowLeft" size={24} />
           </button>
           <button
@@ -85,7 +92,11 @@ const EventDetailModal = ({
               </button>
             </>
           )}
-          <span className={`badge ${event.price === 'Бесплатно' ? 'free' : 'paid'} hero-price`}>
+          <span
+            className={`badge ${
+              event.price === 'Бесплатно' ? 'free' : 'paid'
+            } hero-price`}
+          >
             {event.price}
           </span>
           <span className="hero-counter">
@@ -131,7 +142,7 @@ const EventDetailModal = ({
             <h3>О событии</h3>
             <p>
               Встречаемся в дружелюбной атмосфере, чтобы интересно провести время
-              и познакомиться с новыми людьми. Подойдёт и тем, кто приходит один.
+              и познакомиться с новыми людьми.
             </p>
           </section>
 
@@ -142,11 +153,16 @@ const EventDetailModal = ({
             <p>Уютная атмосфера и общение</p>
           </section>
 
-          <button className="organizer-card" type="button">
+          {/* Кликабельная карточка организатора */}
+          <button
+            className="organizer-card"
+            type="button"
+            onClick={() => onOpenOrganizer?.(event.organizer)}
+          >
             <span className="organizer-mark">{organizerInitials}</span>
             <span>
               <strong>{event.organizer?.name || 'Организатор'}</strong>
-              <small>Организатор события</small>
+              <small>Организатор события · Посмотреть профиль</small>
             </span>
             <Icon name="chevronRight" size={21} />
           </button>
@@ -154,7 +170,7 @@ const EventDetailModal = ({
           <div className="detail-actions">
             {isOwner ? (
               <div className="joined-status">
-                Вы организатор этого события. Управление — в меню «⋯» сверху.
+                Вы организатор этого события.
               </div>
             ) : isJoined ? (
               <>

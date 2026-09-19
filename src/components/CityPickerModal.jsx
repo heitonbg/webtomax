@@ -35,7 +35,7 @@ const CityPickerModal = ({ isOpen, onClose, onSelect, currentCity }) => {
       } finally {
         setLoading(false);
       }
-    }, 400); // Debounce 400ms
+    }, 400);
 
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -87,7 +87,9 @@ const CityPickerModal = ({ isOpen, onClose, onSelect, currentCity }) => {
         <div style={{ maxHeight: '50vh', overflowY: 'auto' }}>
           {results.map((city, index) => (
             <button
-              className={`city-option ${currentCity === city.name ? 'active' : ''}`}
+              className={`city-option ${
+                currentCity === city.name ? 'active' : ''
+              }`}
               key={`${city.name}-${index}`}
               onClick={() => {
                 onSelect(city);
@@ -97,7 +99,13 @@ const CityPickerModal = ({ isOpen, onClose, onSelect, currentCity }) => {
               <span>
                 {city.name}
                 {city.country && (
-                  <small style={{ display: 'block', color: '#8190a3', fontSize: '11px' }}>
+                  <small
+                    style={{
+                      display: 'block',
+                      color: '#8190a3',
+                      fontSize: '11px'
+                    }}
+                  >
                     {city.country}
                   </small>
                 )}
@@ -108,7 +116,14 @@ const CityPickerModal = ({ isOpen, onClose, onSelect, currentCity }) => {
         </div>
 
         {sources.length > 0 && (
-          <p style={{ textAlign: 'center', fontSize: '11px', color: '#b0b8c4', marginTop: '8px' }}>
+          <p
+            style={{
+              textAlign: 'center',
+              fontSize: '11px',
+              color: '#b0b8c4',
+              marginTop: '8px'
+            }}
+          >
             Источники: {sources.join(', ')}
           </p>
         )}
