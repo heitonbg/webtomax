@@ -29,7 +29,10 @@ const EventCard = ({
   );
 
   return (
-    <div className={`event-card-horizontal ${isOwner ? 'event-card-owned' : ''}`} onClick={() => onClick(event)}>
+    <div
+      className={`event-card-horizontal ${isOwner ? 'event-card-owned' : ''}`}
+      onClick={() => onClick(event)}
+    >
       <div className="event-card-image">
         <img src={event.image} alt={event.title} loading="lazy" />
         <span className={`badge ${event.price === 'Бесплатно' ? 'free' : 'paid'}`}>
@@ -58,16 +61,23 @@ const EventCard = ({
 
         <div className="event-card-meta">
           <span><Icon name="calendar" size={15} /> {event.date}</span>
+          {event.duration && (
+            <span><Icon name="clock" size={15} /> {event.duration}</span>
+          )}
           <span><Icon name="pin" size={15} /> {event.distance}</span>
-          <span><Icon name="people" size={15} /> {event.participants} участников</span>
+          <span>
+            <Icon name="people" size={15} /> {event.participants} участников
+          </span>
         </div>
 
         {!isOwner && actionButton}
       </div>
-      {isOwner && <div className="event-card-footer">
-        <span className="event-owner-badge">Вы организатор</span>
-        {actionButton}
-      </div>}
+      {isOwner && (
+        <div className="event-card-footer">
+          <span className="event-owner-badge">Вы организатор</span>
+          {actionButton}
+        </div>
+      )}
     </div>
   );
 };
