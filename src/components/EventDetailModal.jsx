@@ -2,11 +2,13 @@ import React, { useEffect, useState } from 'react';
 import Icon from './Icon';
 import EventOwnerMenu from './EventOwnerMenu';
 import EventLocationMap from './EventLocationMap';
+import Reviews from './Reviews';
 import { isEventOwner } from '../utils/eventOwnership';
 
 const EventDetailModal = ({
   event, onClose, onJoin, onLeave, onDelete, onEdit, onOpenChat,
-  isJoined, isLiked, onToggleLike, userId,
+  isJoined, isLiked, onToggleLike, userId, userName,
+  reviews = [], onAddReview,
   relatedEvents = [], onRelatedClick, onShare
 }) => {
   const isOwner = isEventOwner(event, userId);
@@ -112,6 +114,14 @@ const EventDetailModal = ({
             </span>
             <Icon name="chevronRight" size={21} />
           </button>
+
+          <Reviews
+            event={event}
+            userId={userId}
+            userName={userName}
+            reviews={reviews}
+            onSubmit={onAddReview}
+          />
 
           {relatedEvents.length > 0 && (
             <section className="detail-section related-section">
