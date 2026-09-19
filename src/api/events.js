@@ -8,7 +8,7 @@ import { isEventOwner } from '../utils/eventOwnership.js';
 // В production (Vercel) — публичный туннель (Tuna / Railway / ngrok)
 const API = import.meta.env.DEV
   ? 'http://localhost:3001'
-  : 'https://qdlosi-46-180-170-120.ru.tuna.am';
+  : 'https://ikne7y-46-180-170-120.ru.tuna.am';
 
 // Использовать моки ТОЛЬКО если явно включено
 const USE_MOCK = import.meta.env?.VITE_USE_MOCK === 'true';
