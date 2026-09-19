@@ -10,10 +10,20 @@ let mockEvents = [...MOCK_EVENTS];
 const mockJoins = new Map();
 let mockReviews = [];
 
+// ============ Заголовки для обхода warning-страниц туннелей ============
+const BASE_HEADERS = {
+  'Content-Type': 'application/json',
+  'tuna-skip-browser-warning': 'true',
+  'ngrok-skip-browser-warning': 'true'
+};
+
 // ============ API ============
 const apiFetch = async (path, options = {}) => {
   const res = await fetch(`${API}${path}`, {
-    headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+    headers: {
+      ...BASE_HEADERS,
+      ...(options.headers || {})
+    },
     ...options
   });
   if (!res.ok) {
@@ -159,7 +169,16 @@ export const uploadImages = async (files) => {
   }
   const fd = new FormData();
   files.forEach((f) => fd.append('photos', f));
-  const res = await fetch(`${API}/api/upload`, { method: 'POST', body: fd });
+  const res = await fetch(`${API}/api/upload`, {
+    method: 'POST',
+    body: fd,
+    headers: {
+      // FormData сам выставит Content-Type, его указывать нельзя.
+      // Но warning-заголовки добавляем.
+      'tuna-skip-browser-warning': 'true',
+      'ngrok-skip-browser-warning': 'true'
+    }
+  });
   if (!res.ok) throw new Error('Не удалось загрузить фото');
   const data = await res.json();
   return (data.urls || []).map((u) => `${API}${u}`);
