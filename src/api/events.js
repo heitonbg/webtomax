@@ -3,9 +3,9 @@ import { isEventOwner } from '../utils/eventOwnership.js';
 
 // Локальный сервер
 const API = 'http://localhost:3001';
-// The MVP must work when the bot/server is not running locally. Set
-// VITE_USE_MOCK=false only after the production API is available.
-const USE_MOCK = import.meta.env?.VITE_USE_MOCK !== 'false';
+
+// Использовать ли mock-данные, если сервер недоступен
+const USE_MOCK = import.meta.env?.VITE_USE_MOCK === 'true';
 
 let localEvents = [...MOCK_EVENTS];
 
@@ -24,21 +24,31 @@ const apiFetch = async (path, options = {}) => {
     try {
       const err = await res.json();
       errorMessage = err.error || errorMessage;
-    } catch (e) {}
+    } catch (e) {
+      // ignore
+    }
     throw new Error(errorMessage);
   }
 
   return res.status === 204 ? { success: true } : res.json();
 };
 
-export const fetchEvents = async (filters = {}) => {
+/**
+ * GET событий. city — slug KudaGo ('msk', 'kzn', ...).
+ */
+export const fetchEvents = async ({ city = 'kzn', source = 'all' } = {}) => {
   if (USE_MOCK) {
     await new Promise((r) => setTimeout(r, 150));
     return localEvents;
   }
-  const params = new URLSearchParams(filters).toString();
-  const path = params ? `/api/events?${params}` : '/api/events';
-  return apiFetch(path);
+
+  try {
+    const params = new URLSearchParams({ city, source });
+    return await apiFetch(`/api/events?${params}`);
+  } catch (e) {
+    console.warn('⚠️  Сервер недоступен, используем mock:', e.message);
+    return localEvents;
+  }
 };
 
 export const createEvent = async (eventData) => {
@@ -55,6 +65,7 @@ export const createEvent = async (eventData) => {
     localEvents = [newEvent, ...localEvents];
     return newEvent;
   }
+
   return apiFetch('/api/events', {
     method: 'POST',
     body: JSON.stringify(eventData)
@@ -63,7 +74,9 @@ export const createEvent = async (eventData) => {
 
 export const joinEvent = async (eventId, userId) => {
   if (USE_MOCK) {
-    if (isEventOwner(localEvents.find((e) => e.id === eventId), userId)) throw new Error('Организатор не может записаться на своё событие');
+    if (isEventOwner(localEvents.find((e) => e.id === eventId), userId)) {
+      throw new Error('Организатор не может записаться на своё событие');
+    }
     await new Promise((r) => setTimeout(r, 100));
     localEvents = localEvents.map((e) =>
       e.id === eventId ? { ...e, participants: e.participants + 1 } : e
@@ -72,6 +85,39 @@ export const joinEvent = async (eventId, userId) => {
   }
   return apiFetch(`/api/events/${eventId}/join`, {
     method: 'POST',
+    body: JSON.stringify({ userId })
+  });
+};
+
+export const leaveEvent = async (eventId, userId) => {
+  if (USE_MOCK) {
+    if (isEventOwner(localEvents.find((e) => e.id === eventId), userId)) {
+      throw new Error('Организатор не может отказаться от своего события');
+    }
+    await new Promise((r) => setTimeout(r, 100));
+    localEvents = localEvents.map((e) =>
+      e.id === eventId ? { ...e, participants: Math.max(0, e.participants - 1) } : e
+    );
+    return { success: true };
+  }
+  return apiFetch(`/api/events/${eventId}/leave`, {
+    method: 'POST',
+    body: JSON.stringify({ userId })
+  });
+};
+
+export const deleteEvent = async (eventId, userId) => {
+  if (USE_MOCK) {
+    const event = localEvents.find((e) => e.id === eventId);
+    if (!event) throw new Error('Событие уже удалено');
+    if (!isEventOwner(event, userId)) {
+      throw new Error('Удалить событие может только организатор');
+    }
+    localEvents = localEvents.filter((e) => e.id !== eventId);
+    return { success: true };
+  }
+  return apiFetch(`/api/events/${eventId}`, {
+    method: 'DELETE',
     body: JSON.stringify({ userId })
   });
 };
@@ -96,29 +142,35 @@ export const checkHealth = async () => {
   }
 };
 
-export const leaveEvent = async (eventId, userId) => {
-  if (USE_MOCK) {
-    if (isEventOwner(localEvents.find((e) => e.id === eventId), userId)) throw new Error('Организатор не может отказаться от своего события');
-    await new Promise((r) => setTimeout(r, 100));
-    localEvents = localEvents.map((e) =>
-      e.id === eventId ? { ...e, participants: Math.max(0, e.participants - 1) } : e
-    );
-    return { success: true };
-  }
-  return apiFetch(`/api/events/${eventId}/leave`, {
+/**
+ * Загрузка фотографий на сервер.
+ * @param {File[]} files
+ * @returns {Promise<string[]>} — массив URL
+ */
+export const uploadPhotos = async (files) => {
+  if (!files || !files.length) return [];
+
+  const formData = new FormData();
+  files.forEach((file) => formData.append('photos', file));
+
+  const res = await fetch(`${API}/api/upload`, {
     method: 'POST',
-    body: JSON.stringify({ userId })
+    body: formData
   });
+
+  if (!res.ok) {
+    throw new Error('Не удалось загрузить фотографии');
+  }
+
+  const data = await res.json();
+  return data.urls || [];
 };
 
-export const deleteEvent = async (eventId, userId) => {
-  if (USE_MOCK) {
-    const event = localEvents.find((e) => e.id === eventId);
-    if (!event) throw new Error('Событие уже удалено');
-    if (!isEventOwner(event, userId)) throw new Error('Удалить событие может только организатор');
-    localEvents = localEvents.filter((e) => e.id !== eventId);
-    return { success: true };
-  }
-  // The production API must authorize the authenticated organizer server-side.
-  return apiFetch(`/api/events/${eventId}`, { method: 'DELETE', body: JSON.stringify({ userId }) });
+/**
+ * Возвращает полный URL картинки (для отдачи с сервера).
+ */
+export const resolveImageUrl = (path) => {
+  if (!path) return '';
+  if (path.startsWith('http') || path.startsWith('data:')) return path;
+  return `${API}${path}`;
 };
