@@ -1,8 +1,8 @@
 import React from 'react';
 import Icon from './Icon';
 
-const OrganizerModal = ({ isOpen, onClose, organizer, eventsCount }) => {
-  if (!isOpen) return null;
+const OrganizerModal = ({ isOpen, onClose, organizer, eventsCount, events = [] }) => {
+  if (!isOpen || !organizer) return null;
 
   const initial = organizer?.name?.charAt(0).toUpperCase() || 'О';
   const shortName = organizer?.name || 'Организатор';
@@ -26,7 +26,7 @@ const OrganizerModal = ({ isOpen, onClose, organizer, eventsCount }) => {
             marginBottom: '20px'
           }}
         >
-          <h2 style={{ fontSize: '20px', fontWeight: 800 }}>Организатор</h2>
+          <h2 style={{ fontSize: '20px', fontWeight: 800 }}>Профиль организатора</h2>
           <button className="close-btn" onClick={onClose} aria-label="Закрыть">
             <Icon name="close" size={22} />
           </button>
@@ -99,9 +99,7 @@ const OrganizerModal = ({ isOpen, onClose, organizer, eventsCount }) => {
             >
               {eventsCount || 0}
             </div>
-            <div style={{ fontSize: '11px', color: '#7b899d' }}>
-              Событий
-            </div>
+            <div style={{ fontSize: '11px', color: '#7b899d' }}>Событий</div>
           </div>
           <div
             style={{
@@ -121,9 +119,7 @@ const OrganizerModal = ({ isOpen, onClose, organizer, eventsCount }) => {
             >
               0
             </div>
-            <div style={{ fontSize: '11px', color: '#7b899d' }}>
-              Подписчиков
-            </div>
+            <div style={{ fontSize: '11px', color: '#7b899d' }}>Подписчиков</div>
           </div>
           <div
             style={{
@@ -143,11 +139,66 @@ const OrganizerModal = ({ isOpen, onClose, organizer, eventsCount }) => {
             >
               —
             </div>
-            <div style={{ fontSize: '11px', color: '#7b899d' }}>
-              Рейтинг
-            </div>
+            <div style={{ fontSize: '11px', color: '#7b899d' }}>Рейтинг</div>
           </div>
         </div>
+
+        {events.length > 0 && (
+          <div style={{ marginBottom: '20px' }}>
+            <h4
+              style={{
+                fontSize: '13px',
+                color: '#7b899d',
+                marginBottom: '10px',
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px'
+              }}
+            >
+              Последние события
+            </h4>
+            {events.slice(0, 3).map((ev) => (
+              <div
+                key={ev.id}
+                style={{
+                  display: 'flex',
+                  gap: '10px',
+                  alignItems: 'center',
+                  padding: '10px',
+                  background: '#f7f9fc',
+                  borderRadius: '12px',
+                  marginBottom: '8px'
+                }}
+              >
+                <img
+                  src={ev.image}
+                  alt={ev.title}
+                  style={{
+                    width: '48px',
+                    height: '48px',
+                    borderRadius: '10px',
+                    objectFit: 'cover'
+                  }}
+                />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div
+                    style={{
+                      fontSize: '13px',
+                      fontWeight: 700,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    {ev.title}
+                  </div>
+                  <div style={{ fontSize: '11px', color: '#8190a3' }}>
+                    {ev.date}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
 
         <button
           type="button"
@@ -159,12 +210,9 @@ const OrganizerModal = ({ isOpen, onClose, organizer, eventsCount }) => {
             background: '#2786f8',
             color: '#fff',
             fontWeight: 700,
-            fontSize: '15px',
-            marginBottom: '8px'
+            fontSize: '15px'
           }}
-          onClick={() => {
-            onClose();
-          }}
+          onClick={onClose}
         >
           Написать организатору
         </button>
