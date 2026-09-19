@@ -1,7 +1,7 @@
 import { MOCK_EVENTS } from '../data/mockEvents.js';
 import { isEventOwner } from '../utils/eventOwnership.js';
 
-const API = 'https://v3xy0i-46-180-170-120.ru.tuna.am';
+const API = 'https://nzdiiy-46-180-170-120.ru.tuna.am';
 const USE_MOCK = import.meta.env?.VITE_USE_MOCK === 'true';
 
 let localEvents = [...MOCK_EVENTS];
