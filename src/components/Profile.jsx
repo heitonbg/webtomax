@@ -1,7 +1,12 @@
 import React, { useState } from 'react';
 import Icon from './Icon';
 
-const Profile = ({ user, joinedIds, createdCount, notificationsOn, onToggleNotifications, onLogout }) => {
+const Profile = ({
+  user, joinedIds, createdCount,
+  notificationsOn, onToggleNotifications,
+  theme, onToggleTheme,
+  onLogout
+}) => {
   const [showAbout, setShowAbout] = useState(false);
 
   const userName = user?.first_name
@@ -9,6 +14,7 @@ const Profile = ({ user, joinedIds, createdCount, notificationsOn, onToggleNotif
     : 'Гость';
 
   const userInitial = userName.charAt(0).toUpperCase();
+  const isDark = theme === 'dark';
 
   return (
     <div className="profile-page">
@@ -47,7 +53,7 @@ const Profile = ({ user, joinedIds, createdCount, notificationsOn, onToggleNotif
           <label className="switch">
             <input
               type="checkbox"
-              checked={notificationsOn}
+              checked={Boolean(notificationsOn)}
               onChange={(e) => onToggleNotifications?.(e.target.checked)}
             />
             <span className="slider"></span>
@@ -59,7 +65,14 @@ const Profile = ({ user, joinedIds, createdCount, notificationsOn, onToggleNotif
         </div>
         <div className="settings-row">
           <span><Icon name="grid" size={19} /> Тёмная тема</span>
-          <label className="switch"><input type="checkbox" /><span className="slider"></span></label>
+          <label className="switch">
+            <input
+              type="checkbox"
+              checked={isDark}
+              onChange={(e) => onToggleTheme?.(e.target.checked ? 'dark' : 'light')}
+            />
+            <span className="slider"></span>
+          </label>
         </div>
       </div>
 
