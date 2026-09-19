@@ -11,7 +11,6 @@ import Profile from './components/Profile';
 import Icon from './components/Icon';
 import { EventSkeletonList } from './components/EventSkeleton';
 import CityPickerModal from './components/CityPickerModal';
-import OrganizerModal from './components/OrganizerModal';
 import {
   fetchEvents,
   createEvent,
@@ -25,15 +24,13 @@ import { maxBridge } from './utils/maxBridge';
 import { haversineDistance, formatDistance } from './utils/distance';
 import './App.css';
 
-// Город по умолчанию — Казань
+// Города по умолчанию (пока не выбран через API)
 const DEFAULT_CITY = {
   name: 'Казань',
   lat: 55.796,
   lng: 49.108,
   country: 'Россия'
 };
-
-const CITY_STORAGE_KEY = 'max_events_selected_city';
 
 function App() {
   const [activeTab, setActiveTab] = useState('feed');
@@ -50,32 +47,13 @@ function App() {
   const [userCoords, setUserCoords] = useState(null);
   const [toast, setToast] = useState(null);
   const [lastCreatedEventId, setLastCreatedEventId] = useState(null);
-  const [selectedCity, setSelectedCity] = useState(() => {
-    try {
-      const saved = localStorage.getItem(CITY_STORAGE_KEY);
-      return saved ? JSON.parse(saved) : DEFAULT_CITY;
-    } catch (e) {
-      return DEFAULT_CITY;
-    }
-  });
+  const [selectedCity, setSelectedCity] = useState(DEFAULT_CITY);
   const [isCityOpen, setIsCityOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [organizerToShow, setOrganizerToShow] = useState(null);
   const [pendingDelete, setPendingDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState('');
   const userId = user?.id ?? 'guest';
-
-  // ============================================
-  // Сохранение выбранного города
-  // ============================================
-  useEffect(() => {
-    try {
-      localStorage.setItem(CITY_STORAGE_KEY, JSON.stringify(selectedCity));
-    } catch (e) {
-      // ignore
-    }
-  }, [selectedCity]);
 
   const requestDelete = (event) => {
     if (!isEventOwner(event, userId)) return;
@@ -98,9 +76,7 @@ function App() {
       setPendingDelete(null);
       setToast('Событие удалено');
     } catch (error) {
-      setDeleteError(
-        error.message || 'Не удалось удалить событие. Попробуйте ещё раз.'
-      );
+      setDeleteError(error.message || 'Не удалось удалить событие. Попробуйте ещё раз.');
     } finally {
       setDeleting(false);
     }
@@ -112,9 +88,6 @@ function App() {
     console.info('[MVP analytics]', eventName, payload);
   };
 
-  // ============================================
-  // Инициализация MAX Bridge + геолокация
-  // ============================================
   useEffect(() => {
     maxBridge.init();
     const u = maxBridge.getUser();
@@ -134,9 +107,7 @@ function App() {
     track('feed_opened');
   }, []);
 
-  // ============================================
-  // Загрузка событий при смене города
-  // ============================================
+  // Перезагружаем события при смене города
   useEffect(() => {
     loadEvents(selectedCity.name);
   }, [selectedCity.name]);
@@ -159,9 +130,6 @@ function App() {
     }
   };
 
-  // ============================================
-  // Фильтрация событий
-  // ============================================
   const filteredEvents = useMemo(() => {
     let result = [...events];
 
@@ -186,8 +154,7 @@ function App() {
     }
 
     if (filters) {
-      const isOnline = (event) =>
-        event.format === 'Онлайн' || event.district === 'Онлайн';
+      const isOnline = (event) => event.format === 'Онлайн' || event.district === 'Онлайн';
       const parseDistance = (distance) => {
         const value = Number.parseFloat(String(distance).replace(',', '.'));
         return Number.isFinite(value) ? value : Infinity;
@@ -197,9 +164,7 @@ function App() {
       }
       if (filters.price) {
         result = result.filter((e) =>
-          filters.price === 'Платно'
-            ? e.price !== 'Бесплатно'
-            : e.price === filters.price
+          filters.price === 'Платно' ? e.price !== 'Бесплатно' : e.price === filters.price
         );
       }
       if (filters.format === 'Онлайн') {
@@ -211,9 +176,7 @@ function App() {
         result = result.filter((e) => e.date.includes(filters.time));
       }
       if (filters.distance) {
-        const maxDistance = Number.parseFloat(
-          filters.distance.replace(/[^0-9.]/g, '')
-        );
+        const maxDistance = Number.parseFloat(filters.distance.replace(/[^0-9.]/g, ''));
         result = result.filter((e) => parseDistance(e.distance) <= maxDistance);
       }
       if (filters.pushkinCard) {
@@ -240,9 +203,6 @@ function App() {
     return result;
   }, [events, searchQuery, quickFilter, filters, userCoords]);
 
-  // ============================================
-  // Обработчики
-  // ============================================
   const handleJoinEvent = async (event) => {
     if (isEventOwner(event, userId) || joinedIds.includes(event.id)) return;
 
@@ -256,9 +216,7 @@ function App() {
         )
       );
       setSelectedEvent((prev) =>
-        prev?.id === event.id
-          ? { ...prev, participants: prev.participants + 1 }
-          : prev
+        prev?.id === event.id ? { ...prev, participants: prev.participants + 1 } : prev
       );
       maxBridge.sendData({
         action: 'join_event',
@@ -341,17 +299,10 @@ function App() {
               <div className="mobile-title-row">
                 <h1>
                   События рядом{' '}
-                  <button
-                    className="header-location"
-                    onClick={() => setIsCityOpen(true)}
-                  >
-                    <span className="pin">
-                      <Icon name="pin" size={17} filled />
-                    </span>
+                  <button className="header-location" onClick={() => setIsCityOpen(true)}>
+                    <span className="pin"><Icon name="pin" size={17} filled /></span>
                     {selectedCity.name}
-                    <span className="chevron">
-                      <Icon name="chevronDown" size={14} />
-                    </span>
+                    <span className="chevron"><Icon name="chevronDown" size={14} /></span>
                   </button>
                 </h1>
                 <button
@@ -376,19 +327,13 @@ function App() {
                 className={`tab-btn ${activeTab === 'feed' ? 'active' : ''}`}
                 onClick={() => setActiveTab('feed')}
               >
-                <span className="tab-icon">
-                  <Icon name="calendar" size={21} />
-                </span>{' '}
-                Лента
+                <span className="tab-icon"><Icon name="calendar" size={21} /></span> Лента
               </button>
               <button
                 className={`tab-btn ${activeTab === 'map' ? 'active' : ''}`}
                 onClick={() => setActiveTab('map')}
               >
-                <span className="tab-icon">
-                  <Icon name="map" size={21} />
-                </span>{' '}
-                Карта
+                <span className="tab-icon"><Icon name="map" size={21} /></span> Карта
               </button>
             </div>
 
@@ -484,13 +429,10 @@ function App() {
                   joinedIds={joinedIds}
                   createdCount={
                     events.filter(
-                      (e) =>
-                        e.organizer && e.organizer.id === (user?.id || 'guest')
+                      (e) => e.organizer && e.organizer.id === (user?.id || 'guest')
                     ).length
                   }
-                  onLogout={() =>
-                    setToast('Профиль гостя остаётся активным в MVP')
-                  }
+                  onLogout={() => setToast('Профиль гостя остаётся активным в MVP')}
                 />
               )}
             </>
@@ -502,30 +444,22 @@ function App() {
             onClick={() => setActiveTab('feed')}
             className={activeTab === 'feed' ? 'active' : ''}
           >
-            <span className="icon">
-              <Icon name="home" size={23} filled />
-            </span>
+            <span className="icon"><Icon name="home" size={23} filled /></span>
             <span>Главная</span>
           </button>
           <button
             onClick={() => setActiveTab('create')}
-            onClickCapture={() =>
-              track('create_started', { source: 'navigation' })
-            }
+            onClickCapture={() => track('create_started', { source: 'navigation' })}
             className={`create-btn ${activeTab === 'create' ? 'active' : ''}`}
           >
-            <span className="icon-plus">
-              <Icon name="plus" size={34} />
-            </span>
+            <span className="icon-plus"><Icon name="plus" size={34} /></span>
           </button>
           <button
-            onClick={() => setActiveTab('profile')}
-            className={activeTab === 'profile' ? 'active' : ''}
+            onClick={() => setActiveTab('my')}
+            className={activeTab === 'my' ? 'active' : ''}
           >
-            <span className="icon">
-              <Icon name="user" size={23} />
-            </span>
-            <span>Профиль</span>
+            <span className="icon"><Icon name="user" size={23} /></span>
+            <span>Мои события</span>
           </button>
         </div>
       </div>
@@ -546,22 +480,10 @@ function App() {
           onJoin={handleJoinEvent}
           onLeave={handleLeaveEvent}
           onOpenChat={handleOpenChat}
-          onOpenOrganizer={(org) => setOrganizerToShow(org)}
           isJoined={joinedIds.includes(selectedEvent.id)}
           isLiked={likedIds.includes(selectedEvent.id)}
           onToggleLike={handleToggleLike}
           userId={user?.id || 'guest'}
-        />
-      )}
-
-      {organizerToShow && (
-        <OrganizerModal
-          isOpen={Boolean(organizerToShow)}
-          onClose={() => setOrganizerToShow(null)}
-          organizer={organizerToShow}
-          eventsCount={
-            events.filter((e) => e.organizer?.id === organizerToShow.id).length
-          }
         />
       )}
 
@@ -606,20 +528,11 @@ function App() {
             }}
           >
             <Icon name="grid" size={19} />
-            Профиль
-          </button>
-          <button
-            onClick={() => {
-              setIsCityOpen(true);
-              setIsMenuOpen(false);
-            }}
-          >
-            <Icon name="pin" size={19} />
-            Выбрать город
+            О приложении
           </button>
           <button onClick={() => setIsMenuOpen(false)}>
             <Icon name="close" size={19} />
-            Закрыть
+            Закрыть меню
           </button>
         </div>
       )}
