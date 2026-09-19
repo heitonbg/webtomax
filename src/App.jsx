@@ -12,7 +12,8 @@ import Icon from './components/Icon';
 import { EventSkeletonList } from './components/EventSkeleton';
 import {
   fetchEvents, fetchJoinedIds, createEvent, updateEvent,
-  joinEvent, leaveEvent, deleteEvent
+  joinEvent, leaveEvent, deleteEvent,
+  fetchReviews, addReview
 } from './api/events';
 import { isEventOwner } from './utils/eventOwnership';
 import DeleteEventDialog from './components/DeleteEventDialog';
@@ -46,6 +47,8 @@ function App() {
   const [sortBy, setSortBy] = useState(() => storage.getSort());
   const [notificationsOn, setNotificationsOn] = useState(() => storage.getNotifications());
   const [pendingActions, setPendingActions] = useState({});
+  const [theme, setTheme] = useState(() => storage.getTheme());
+  const [reviewsByEvent, setReviewsByEvent] = useState({});
   const userId = user?.id ?? 'guest';
 
   const pushToast = useCallback((text, variant = 'success') => {
@@ -97,6 +100,8 @@ function App() {
   useEffect(() => { storage.setLiked(likedIds); }, [likedIds]);
   useEffect(() => { storage.setSort(sortBy); }, [sortBy]);
   useEffect(() => { storage.setNotifications(notificationsOn); }, [notificationsOn]);
+  useEffect(() => { storage.setTheme(theme); }, [theme]);
+  useEffect(() => { document.body.dataset.theme = theme; }, [theme]);
 
   useEffect(() => {
     maxBridge.init();
@@ -125,8 +130,11 @@ function App() {
       const id = Number(startParam.replace('event_', ''));
       if (Number.isFinite(id)) {
         setTimeout(() => {
-          const ev = events.find((e) => e.id === id);
-          if (ev) setSelectedEvent(ev);
+          setEvents((current) => {
+            const ev = current.find((e) => e.id === id);
+            if (ev) setSelectedEvent(ev);
+            return current;
+          });
         }, 400);
       }
     }
@@ -134,6 +142,15 @@ function App() {
     track('feed_opened');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Загрузка отзывов при открытии события
+  useEffect(() => {
+    if (!selectedEvent) return;
+    const id = selectedEvent.id;
+    fetchReviews(id)
+      .then((revs) => setReviewsByEvent((prev) => ({ ...prev, [id]: revs })))
+      .catch(() => {});
+  }, [selectedEvent?.id]);
 
   const loadEvents = async () => {
     try {
@@ -384,6 +401,16 @@ function App() {
     setFilters(null);
   };
 
+  const handleAddReview = async (review) => {
+    const created = await addReview(review);
+    setReviewsByEvent((prev) => ({
+      ...prev,
+      [review.eventId]: [created, ...(prev[review.eventId] || [])]
+    }));
+    pushToast('Спасибо за отзыв!');
+    return created;
+  };
+
   const isExploreTab = activeTab === 'feed' || activeTab === 'map';
 
   return (
@@ -538,6 +565,8 @@ function App() {
                   createdCount={events.filter((e) => e.organizer && e.organizer.id === (user?.id || 'guest')).length}
                   notificationsOn={notificationsOn}
                   onToggleNotifications={setNotificationsOn}
+                  theme={theme}
+                  onToggleTheme={setTheme}
                   onLogout={() => pushToast('Профиль гостя остаётся активным в MVP', 'info')}
                 />
               )}
@@ -585,6 +614,9 @@ function App() {
           isLiked={likedIds.includes(selectedEvent.id)}
           onToggleLike={handleToggleLike}
           userId={userId}
+          userName={user?.first_name || user?.name}
+          reviews={reviewsByEvent[selectedEvent.id] || []}
+          onAddReview={handleAddReview}
           relatedEvents={filteredEvents.filter((e) => e.id !== selectedEvent.id && e.category === selectedEvent.category).slice(0, 3)}
           onRelatedClick={handleEventClick}
           onShare={(ev) => {

@@ -263,3 +263,113 @@
 
 /* Owner dropdown edit */
 .event-owner-dropdown button + button { border-top: 1px solid #f1f4f8; border-radius: 0; }
+
+/* ============================================
+   REVIEWS
+   ============================================ */
+.reviews-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.reviews-average { display: inline-flex; align-items: center; gap: 4px; color: #f5a200; font-weight: 700; font-size: 14px; }
+.reviews-empty { color: #7b899d; font-size: 13px; margin-bottom: 10px; }
+.reviews-list { display: grid; gap: 10px; margin-bottom: 14px; }
+.review-item { padding: 10px 12px; background: #f7f9fc; border-radius: 12px; }
+.review-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+.review-head strong { font-size: 13px; }
+.review-stars { display: inline-flex; gap: 1px; color: #f5a200; }
+.review-text { font-size: 13px; color: #44536a; line-height: 1.4; }
+.review-form { display: grid; gap: 8px; padding-top: 10px; border-top: 1px solid #edf0f4; }
+.review-form-stars { display: flex; gap: 4px; }
+.review-star { background: none; border: 0; padding: 2px; color: #cbd3df; cursor: pointer; }
+.review-star.active { color: #f5a200; }
+.review-form textarea {
+  width: 100%; padding: 10px 12px; border: 1px solid #e5eaf1; border-radius: 12px;
+  font-family: inherit; font-size: 13px; resize: none; outline: none;
+}
+.review-form textarea:focus { border-color: #2786f8; box-shadow: 0 0 0 3px rgba(39,134,248,.1); }
+
+/* ============================================
+   DARK THEME
+   ============================================ */
+body[data-theme="dark"] {
+  --vk-bg: #15171c;
+  --vk-card: #1e2128;
+  --vk-text: #e8eaed;
+  --vk-text-secondary: #8b95a5;
+  --vk-divider: #2b3038;
+  --vk-blue-light: #1c2a3d;
+  background: #15171c;
+  color: #e8eaed;
+}
+
+body[data-theme="dark"] .main-content,
+body[data-theme="dark"] .mobile-header,
+body[data-theme="dark"] .search-bar,
+body[data-theme="dark"] .content-area,
+body[data-theme="dark"] .event-card-horizontal,
+body[data-theme="dark"] .modal-content,
+body[data-theme="dark"] .bottom-nav,
+body[data-theme="dark"] .detail-body,
+body[data-theme="dark"] .detail-section,
+body[data-theme="dark"] .profile-section,
+body[data-theme="dark"] .profile-stats,
+body[data-theme="dark"] .detail-actions {
+  background: #1e2128;
+  color: #e8eaed;
+}
+
+body[data-theme="dark"] .search-bar input,
+body[data-theme="dark"] .tabs-row,
+body[data-theme="dark"] .tab-btn,
+body[data-theme="dark"] .chip,
+body[data-theme="dark"] .input-with-icon,
+body[data-theme="dark"] .textarea-with-icon,
+body[data-theme="dark"] .format-segmented,
+body[data-theme="dark"] .my-events-tabs,
+body[data-theme="dark"] .sort-chip {
+  background: #262a33;
+  color: #c5cbd5;
+}
+
+body[data-theme="dark"] .tab-btn.active,
+body[data-theme="dark"] .chip.active,
+body[data-theme="dark"] .sort-chip.active {
+  background: #1c3a5e;
+  color: #5ea4ff;
+}
+
+body[data-theme="dark"] .event-card-horizontal h3,
+body[data-theme="dark"] .detail-body h2,
+body[data-theme="dark"] .page-title,
+body[data-theme="dark"] .modal-header h2,
+body[data-theme="dark"] .create-header h1 {
+  color: #f0f2f5;
+}
+
+body[data-theme="dark"] .event-card-description,
+body[data-theme="dark"] .detail-description,
+body[data-theme="dark"] .greeting,
+body[data-theme="dark"] .stat-label,
+body[data-theme="dark"] .settings-row {
+  color: #8b95a5;
+}
+
+body[data-theme="dark"] .detail-top-facts div,
+body[data-theme="dark"] .detail-section p {
+  color: #a8b2c1;
+}
+
+body[data-theme="dark"] .review-item,
+body[data-theme="dark"] .related-card,
+body[data-theme="dark"] .venue-card,
+body[data-theme="dark"] .organizer-card {
+  background: #262a33;
+  border-color: #2b3038;
+}
+
+body[data-theme="dark"] .review-form textarea {
+  background: #262a33;
+  border-color: #2b3038;
+  color: #e8eaed;
+}
+
+body[data-theme="dark"] .review-text { color: #c5cbd5; }
+body[data-theme="dark"] .reviews-empty { color: #8b95a5; }
