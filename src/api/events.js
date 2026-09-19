@@ -1,7 +1,7 @@
 import { MOCK_EVENTS } from '../data/mockEvents.js';
 import { isEventOwner } from '../utils/eventOwnership.js';
 
-const API = 'https://z1fg80-46-180-170-120.ru.tuna.am';
+const API = 'http://localhost:3001';
 const USE_MOCK = import.meta.env?.VITE_USE_MOCK === 'true';
 
 let localEvents = [...MOCK_EVENTS];
@@ -187,4 +187,25 @@ export const resolveImageUrl = (path) => {
   if (!path) return '';
   if (path.startsWith('http') || path.startsWith('data:')) return path;
   return `${API}${path}`;
+};
+
+export const searchCities = async (query) => {
+  if (!query || query.trim().length < 2) {
+    return { cities: [], sources: [] };
+  }
+  try {
+    const params = new URLSearchParams({ q: query });
+    return await apiFetch(`/api/cities/search?${params}`);
+  } catch (e) {
+    console.warn('City search failed:', e.message);
+    return { cities: [], sources: [] };
+  }
+};
+
+export const reverseGeocode = async (lat, lng) => {
+  const params = new URLSearchParams({
+    lat: String(lat),
+    lng: String(lng)
+  });
+  return apiFetch(`/api/cities/reverse?${params}`);
 };
