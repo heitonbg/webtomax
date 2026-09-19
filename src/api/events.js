@@ -1,7 +1,7 @@
 import { MOCK_EVENTS } from '../data/mockEvents.js';
 import { isEventOwner } from '../utils/eventOwnership.js';
 
-const API = import.meta.env?.VITE_API_URL || 'https://jl4xtg-46-180-170-120.ru.tuna.am';
+const API = import.meta.env?.VITE_API_URL || 'http://localhost:3001';
 // Если сервер не запущен — можно поставить VITE_USE_MOCK=true, чтобы работать на моке.
 const USE_MOCK = import.meta.env?.VITE_USE_MOCK === 'true';
 
@@ -10,20 +10,10 @@ let mockEvents = [...MOCK_EVENTS];
 const mockJoins = new Map();
 let mockReviews = [];
 
-// ============ Заголовки для обхода warning-страниц туннелей ============
-const BASE_HEADERS = {
-  'Content-Type': 'application/json',
-  'tuna-skip-browser-warning': 'true',
-  'ngrok-skip-browser-warning': 'true'
-};
-
 // ============ API ============
 const apiFetch = async (path, options = {}) => {
   const res = await fetch(`${API}${path}`, {
-    headers: {
-      ...BASE_HEADERS,
-      ...(options.headers || {})
-    },
+    headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
     ...options
   });
   if (!res.ok) {
@@ -169,16 +159,7 @@ export const uploadImages = async (files) => {
   }
   const fd = new FormData();
   files.forEach((f) => fd.append('photos', f));
-  const res = await fetch(`${API}/api/upload`, {
-    method: 'POST',
-    body: fd,
-    headers: {
-      // FormData сам выставит Content-Type, его указывать нельзя.
-      // Но warning-заголовки добавляем.
-      'tuna-skip-browser-warning': 'true',
-      'ngrok-skip-browser-warning': 'true'
-    }
-  });
+  const res = await fetch(`${API}/api/upload`, { method: 'POST', body: fd });
   if (!res.ok) throw new Error('Не удалось загрузить фото');
   const data = await res.json();
   return (data.urls || []).map((u) => `${API}${u}`);
