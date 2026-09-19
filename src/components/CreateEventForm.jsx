@@ -1,11 +1,27 @@
 import React, { useRef, useState } from 'react';
 import { MapContainer, Marker, TileLayer, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
-import { moderateContent, validateAddress, moderateUrl } from '../utils/contentModeration';
-import { uploadPhotos, resolveImageUrl } from '../api/events';
+import {
+  moderateContent,
+  validateAddress,
+  moderateUrl
+} from '../utils/contentModeration';
+import {
+  uploadPhotos,
+  resolveImageUrl,
+  reverseGeocode
+} from '../api/events';
 import Icon from './Icon';
 
-const CATEGORIES = ['Настольные игры', 'Спорт', 'Культура', 'Кино', 'Прогулка', 'Музыка', 'Другое'];
+const CATEGORIES = [
+  'Настольные игры',
+  'Спорт',
+  'Культура',
+  'Кино',
+  'Прогулка',
+  'Музыка',
+  'Другое'
+];
 
 const CITY_CENTERS = {
   'Казань': { lat: 55.796, lng: 49.108 },
@@ -17,16 +33,48 @@ const CITY_CENTERS = {
 };
 
 const ADDRESS_SUGGESTIONS = [
-  { city: 'Казань', address: 'г. Казань, ул. Ленина, 101', district: 'Вахитовский район', lat: 55.792, lng: 49.12 },
-  { city: 'Казань', address: 'г. Казань, ул. Кремлёвская, 35', district: 'Вахитовский район', lat: 55.798, lng: 49.106 },
-  { city: 'Казань', address: 'г. Казань, Петербургская улица, 1', district: 'Вахитовский район', lat: 55.785, lng: 49.124 },
-  { city: 'Казань', address: 'г. Казань, Горкинско-Ометьевский лес', district: 'Советский район', lat: 55.82, lng: 49.12 },
-  { city: 'Москва', address: 'г. Москва, ул. Тверская, 12', district: 'Тверской район', lat: 55.761, lng: 37.609 },
-  { city: 'Москва', address: 'г. Москва, парк Горького', district: 'Якиманка', lat: 55.729, lng: 37.601 },
-  { city: 'Санкт-Петербург', address: 'г. Санкт-Петербург, Невский проспект, 28', district: 'Центральный район', lat: 59.936, lng: 30.325 },
-  { city: 'Санкт-Петербург', address: 'г. Санкт-Петербург, Новая Голландия', district: 'Адмиралтейский район', lat: 59.929, lng: 30.289 },
-  { city: 'Новосибирск', address: 'г. Новосибирск, Красный проспект, 25', district: 'Центральный район', lat: 55.028, lng: 82.921 },
-  { city: 'Екатеринбург', address: 'г. Екатеринбург, ул. Ленина, 24', district: 'Ленинский район', lat: 56.838, lng: 60.603 }
+  {
+    city: 'Казань',
+    address: 'г. Казань, ул. Ленина, 101',
+    district: 'Вахитовский район',
+    lat: 55.792,
+    lng: 49.12
+  },
+  {
+    city: 'Казань',
+    address: 'г. Казань, ул. Кремлёвская, 35',
+    district: 'Вахитовский район',
+    lat: 55.798,
+    lng: 49.106
+  },
+  {
+    city: 'Казань',
+    address: 'г. Казань, Петербургская улица, 1',
+    district: 'Вахитовский район',
+    lat: 55.785,
+    lng: 49.124
+  },
+  {
+    city: 'Москва',
+    address: 'г. Москва, ул. Тверская, 12',
+    district: 'Тверской район',
+    lat: 55.761,
+    lng: 37.609
+  },
+  {
+    city: 'Москва',
+    address: 'г. Москва, парк Горького',
+    district: 'Якиманка',
+    lat: 55.729,
+    lng: 37.601
+  },
+  {
+    city: 'Санкт-Петербург',
+    address: 'г. Санкт-Петербург, Невский проспект, 28',
+    district: 'Центральный район',
+    lat: 59.936,
+    lng: 30.325
+  }
 ];
 
 const pickerPin = L.divIcon({
@@ -52,8 +100,15 @@ const DURATION_OPTIONS = [
   'Весь день'
 ];
 
-const CreateEventForm = ({ onCreate, onCancel, userId, userName, city = 'Казань' }) => {
+const CreateEventForm = ({
+  onCreate,
+  onCancel,
+  userId,
+  userName,
+  city = 'Казань'
+}) => {
   const center = CITY_CENTERS[city] || CITY_CENTERS['Казань'];
+
   const [formData, setFormData] = useState({
     title: '',
     category: '',
@@ -68,12 +123,16 @@ const CreateEventForm = ({ onCreate, onCancel, userId, userName, city = 'Каз�
     description: '',
     images: [],
     lat: center.lat,
-    lng: center.lng
+    lng: center.lng,
+    // Город, к которому относится событие (может отличаться от города в шапке)
+    eventCity: city
   });
+
   const [errors, setErrors] = useState({});
   const [publicPlaceConfirmed, setPublicPlaceConfirmed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [geocoding, setGeocoding] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [showMapPicker, setShowMapPicker] = useState(false);
   const [draftPoint, setDraftPoint] = useState(null);
@@ -85,7 +144,11 @@ const CreateEventForm = ({ onCreate, onCancel, userId, userName, city = 'Каз�
   };
 
   const chooseSuggestion = (suggestion) => {
-    setFormData((prev) => ({ ...prev, ...suggestion }));
+    setFormData((prev) => ({
+      ...prev,
+      ...suggestion,
+      eventCity: suggestion.city || prev.eventCity
+    }));
     setDraftPoint({ lat: suggestion.lat, lng: suggestion.lng });
     setShowMapPicker(true);
     setShowSuggestions(false);
@@ -145,7 +208,8 @@ const CreateEventForm = ({ onCreate, onCancel, userId, userName, city = 'Каз�
       if (!imageCheck.isClean) nextErrors.image = imageCheck.reason;
     }
     if (!publicPlaceConfirmed) {
-      nextErrors.publicPlace = 'Подтвердите, что встреча проходит в общественном месте';
+      nextErrors.publicPlace =
+        'Подтвердите, что встреча проходит в общественном месте';
     }
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
@@ -159,17 +223,19 @@ const CreateEventForm = ({ onCreate, onCancel, userId, userName, city = 'Каз�
       await onCreate({
         ...formData,
         date: `${formData.date}, ${formData.time}`,
-        address: formData.format === 'Онлайн' ? 'Онлайн' : formData.address,
+        address:
+          formData.format === 'Онлайн' ? 'Онлайн' : formData.address,
         district:
           formData.format === 'Онлайн'
             ? 'Онлайн'
-            : formData.district || formData.address,
+            : formData.district || formData.eventCity,
+        // Сохраняем именно тот город, к которому относится точка
+        city: formData.format === 'Онлайн' ? 'Онлайн' : formData.eventCity,
         maxParticipants: Number.parseInt(formData.limit, 10) || 50,
         participants: 1,
         distance: '0.0 км',
         rating: 0,
         reviewsCount: 0,
-        city,
         image:
           formData.images[0] ||
           'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&w=800&q=80',
@@ -177,22 +243,64 @@ const CreateEventForm = ({ onCreate, onCancel, userId, userName, city = 'Каз�
         organizer: { id: userId, name: userName || 'Вы' }
       });
     } catch (error) {
-      setErrors({ submit: error.message || 'Не удалось создать событие' });
+      setErrors({
+        submit: error.message || 'Не удалось создать событие'
+      });
     } finally {
       setSubmitting(false);
     }
   };
 
-  const confirmPoint = () => {
+  // ============================================
+  // Главное: определяем реальный адрес точки
+  // ============================================
+  const confirmPoint = async () => {
     if (!draftPoint) return;
-    setFormData((prev) => ({
-      ...prev,
-      lat: draftPoint.lat,
-      lng: draftPoint.lng,
-      address: prev.address || `Точка на карте, ${city}`,
-      district: prev.district || city
-    }));
-    setShowMapPicker(false);
+
+    setGeocoding(true);
+    try {
+      const result = await reverseGeocode(draftPoint.lat, draftPoint.lng);
+
+      // Собираем читаемый адрес
+      const parts = [];
+      if (result.street) parts.push(result.street);
+      if (result.city) parts.push(result.city);
+
+      const address = parts.length
+        ? parts.join(', ')
+        : result.displayName || 'Точка на карте';
+
+      setFormData((prev) => ({
+        ...prev,
+        lat: draftPoint.lat,
+        lng: draftPoint.lng,
+        address,
+        // Город события — реальный, не из шапки
+        eventCity: result.city || prev.eventCity || city,
+        district:
+          result.district ||
+          prev.district ||
+          result.city ||
+          ''
+      }));
+
+      setShowMapPicker(false);
+    } catch (e) {
+      console.warn('Reverse geocoding failed:', e);
+      // Фолбэк: если не удалось — оставляем как было
+      setFormData((prev) => ({
+        ...prev,
+        lat: draftPoint.lat,
+        lng: draftPoint.lng,
+        address:
+          prev.address ||
+          `Точка (${draftPoint.lat.toFixed(4)}, ${draftPoint.lng.toFixed(4)})`,
+        district: prev.district || ''
+      }));
+      setShowMapPicker(false);
+    } finally {
+      setGeocoding(false);
+    }
   };
 
   return (
@@ -214,7 +322,9 @@ const CreateEventForm = ({ onCreate, onCancel, userId, userName, city = 'Каз�
         <div className="form-group">
           <label>Название события</label>
           <div className={`input-with-icon ${errors.title ? 'error' : ''}`}>
-            <span className="input-icon"><Icon name="edit" size={21} /></span>
+            <span className="input-icon">
+              <Icon name="edit" size={21} />
+            </span>
             <input
               value={formData.title}
               onChange={(e) => setField('title', e.target.value)}
@@ -227,8 +337,14 @@ const CreateEventForm = ({ onCreate, onCancel, userId, userName, city = 'Каз�
         {/* Категория */}
         <div className="form-group">
           <label>Категория</label>
-          <div className={`input-with-icon select-wrapper ${errors.category ? 'error' : ''}`}>
-            <span className="input-icon"><Icon name="grid" size={21} /></span>
+          <div
+            className={`input-with-icon select-wrapper ${
+              errors.category ? 'error' : ''
+            }`}
+          >
+            <span className="input-icon">
+              <Icon name="grid" size={21} />
+            </span>
             <select
               value={formData.category}
               onChange={(e) => setField('category', e.target.value)}
@@ -248,7 +364,9 @@ const CreateEventForm = ({ onCreate, onCancel, userId, userName, city = 'Каз�
           <div className="form-group">
             <label>Дата</label>
             <div className={`input-with-icon ${errors.date ? 'error' : ''}`}>
-              <span className="input-icon"><Icon name="calendar" size={21} /></span>
+              <span className="input-icon">
+                <Icon name="calendar" size={21} />
+              </span>
               <input
                 type="date"
                 value={formData.date}
@@ -260,7 +378,9 @@ const CreateEventForm = ({ onCreate, onCancel, userId, userName, city = 'Каз�
           <div className="form-group">
             <label>Время</label>
             <div className={`input-with-icon ${errors.time ? 'error' : ''}`}>
-              <span className="input-icon"><Icon name="clock" size={21} /></span>
+              <span className="input-icon">
+                <Icon name="clock" size={21} />
+              </span>
               <input
                 type="time"
                 value={formData.time}
@@ -274,8 +394,10 @@ const CreateEventForm = ({ onCreate, onCancel, userId, userName, city = 'Каз�
         {/* Продолжительность */}
         <div className="form-group">
           <label>Продолжительность</label>
-          <div className={`input-with-icon select-wrapper`}>
-            <span className="input-icon"><Icon name="clock" size={21} /></span>
+          <div className="input-with-icon select-wrapper">
+            <span className="input-icon">
+              <Icon name="clock" size={21} />
+            </span>
             <select
               value={formData.duration}
               onChange={(e) => setField('duration', e.target.value)}
@@ -297,14 +419,16 @@ const CreateEventForm = ({ onCreate, onCancel, userId, userName, city = 'Каз�
               className={formData.format === 'Офлайн' ? 'active' : ''}
               onClick={() => setField('format', 'Офлайн')}
             >
-              <Icon name="people" size={21} />Офлайн
+              <Icon name="people" size={21} />
+              Офлайн
             </button>
             <button
               type="button"
               className={formData.format === 'Онлайн' ? 'active' : ''}
               onClick={() => setField('format', 'Онлайн')}
             >
-              <Icon name="monitor" size={21} />Онлайн
+              <Icon name="monitor" size={21} />
+              Онлайн
             </button>
           </div>
         </div>
@@ -313,12 +437,20 @@ const CreateEventForm = ({ onCreate, onCancel, userId, userName, city = 'Каз�
         {formData.format === 'Офлайн' && (
           <div className="form-group">
             <label>Место проведения</label>
-            <div className={`address-control input-with-icon ${errors.address ? 'error' : ''}`}>
-              <span className="input-icon"><Icon name="pin" size={21} /></span>
+            <div
+              className={`address-control input-with-icon ${
+                errors.address ? 'error' : ''
+              }`}
+            >
+              <span className="input-icon">
+                <Icon name="pin" size={21} />
+              </span>
               <input
                 value={formData.address}
                 onFocus={() => setShowSuggestions(true)}
-                onBlur={() => window.setTimeout(() => setShowSuggestions(false), 120)}
+                onBlur={() =>
+                  window.setTimeout(() => setShowSuggestions(false), 120)
+                }
                 onChange={(e) => {
                   setField('address', e.target.value);
                   setShowSuggestions(true);
@@ -330,7 +462,9 @@ const CreateEventForm = ({ onCreate, onCancel, userId, userName, city = 'Каз�
                   {ADDRESS_SUGGESTIONS.filter(
                     (item) =>
                       item.city === city &&
-                      item.address.toLowerCase().includes(formData.address.toLowerCase())
+                      item.address
+                        .toLowerCase()
+                        .includes(formData.address.toLowerCase())
                   ).map((item) => (
                     <button
                       type="button"
@@ -353,7 +487,9 @@ const CreateEventForm = ({ onCreate, onCancel, userId, userName, city = 'Каз�
               type="button"
               className="map-picker-btn map-picker-full"
               onClick={() => {
-                setDraftPoint((point) => point || { lat: formData.lat, lng: formData.lng });
+                setDraftPoint(
+                  (point) => point || { lat: formData.lat, lng: formData.lng }
+                );
                 setShowMapPicker((value) => !value);
               }}
             >
@@ -365,8 +501,13 @@ const CreateEventForm = ({ onCreate, onCancel, userId, userName, city = 'Каз�
               <div className="inline-location-picker">
                 <div className="picker-map">
                   <MapContainer
-                    key={`${draftPoint?.lat || formData.lat}-${draftPoint?.lng || formData.lng}`}
-                    center={[draftPoint?.lat || formData.lat, draftPoint?.lng || formData.lng]}
+                    key={`${draftPoint?.lat || formData.lat}-${
+                      draftPoint?.lng || formData.lng
+                    }`}
+                    center={[
+                      draftPoint?.lat || formData.lat,
+                      draftPoint?.lng || formData.lng
+                    ]}
                     zoom={14}
                     scrollWheelZoom
                   >
@@ -380,16 +521,30 @@ const CreateEventForm = ({ onCreate, onCancel, userId, userName, city = 'Каз�
                 <button
                   type="button"
                   className="confirm-map-point"
-                  disabled={!draftPoint}
+                  disabled={!draftPoint || geocoding}
                   onClick={confirmPoint}
                 >
-                  Готово, сохранить точку
+                  {geocoding
+                    ? 'Определяем адрес...'
+                    : 'Готово, сохранить точку'}
                 </button>
               </div>
             )}
             <p className="hint-text-with-icon">
-              Выберите адрес из подсказки или нажмите на нужное место на карте.
+              Выберите адрес из подсказки или нажмите на нужное место на
+              карте.
             </p>
+
+            {/* Показываем, к какому городу привязано событие */}
+            {formData.eventCity && (
+              <p
+                className="hint-text-with-icon"
+                style={{ color: '#1978ed', fontWeight: 600 }}
+              >
+                <span className="hint-icon">📍</span>
+                Событие будет в городе: {formData.eventCity}
+              </p>
+            )}
           </div>
         )}
 
@@ -398,7 +553,9 @@ const CreateEventForm = ({ onCreate, onCancel, userId, userName, city = 'Каз�
           <label>Лимит участников</label>
           <div className="limit-row">
             <div className="input-with-icon">
-              <span className="input-icon"><Icon name="people" size={21} /></span>
+              <span className="input-icon">
+                <Icon name="people" size={21} />
+              </span>
               <input
                 type="number"
                 value={formData.limit}
@@ -429,9 +586,18 @@ const CreateEventForm = ({ onCreate, onCancel, userId, userName, city = 'Каз�
             <div className="image-preview-strip">
               {formData.images.length ? (
                 formData.images.map((image, index) => (
-                  <div className="image-preview-item" key={`${image}-${index}`}>
-                    <img src={resolveImageUrl(image)} alt={`Фото ${index + 1}`} />
-                    <button type="button" onClick={() => removeImage(index)}>
+                  <div
+                    className="image-preview-item"
+                    key={`${image}-${index}`}
+                  >
+                    <img
+                      src={resolveImageUrl(image)}
+                      alt={`Фото ${index + 1}`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeImage(index)}
+                    >
                       <Icon name="close" size={14} />
                     </button>
                   </div>
@@ -460,8 +626,14 @@ const CreateEventForm = ({ onCreate, onCancel, userId, userName, city = 'Каз�
         {/* Описание */}
         <div className="form-group">
           <label>Описание</label>
-          <div className={`textarea-with-icon ${errors.description ? 'error' : ''}`}>
-            <span className="textarea-icon"><Icon name="edit" size={21} /></span>
+          <div
+            className={`textarea-with-icon ${
+              errors.description ? 'error' : ''
+            }`}
+          >
+            <span className="textarea-icon">
+              <Icon name="edit" size={21} />
+            </span>
             <textarea
               rows="5"
               maxLength={1000}
@@ -471,7 +643,9 @@ const CreateEventForm = ({ onCreate, onCancel, userId, userName, city = 'Каз�
             />
           </div>
           <p className="char-counter">{formData.description.length}/1000</p>
-          {errors.description && <p className="error-text">{errors.description}</p>}
+          {errors.description && (
+            <p className="error-text">{errors.description}</p>
+          )}
         </div>
 
         {/* Стоимость */}
@@ -502,10 +676,18 @@ const CreateEventForm = ({ onCreate, onCancel, userId, userName, city = 'Каз�
             Подтверждаю, что мероприятие проходит в общественном месте
           </label>
         </div>
-        {errors.publicPlace && <p className="error-text">{errors.publicPlace}</p>}
-        {errors.submit && <p className="error-text submit-error">{errors.submit}</p>}
+        {errors.publicPlace && (
+          <p className="error-text">{errors.publicPlace}</p>
+        )}
+        {errors.submit && (
+          <p className="error-text submit-error">{errors.submit}</p>
+        )}
 
-        <button type="submit" className="submit-btn-v2" disabled={submitting || uploading}>
+        <button
+          type="submit"
+          className="submit-btn-v2"
+          disabled={submitting || uploading || geocoding}
+        >
           {submitting ? 'Создаём...' : 'Создать событие'}
         </button>
       </form>
