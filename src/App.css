@@ -1732,3 +1732,498 @@ input, select, textarea { font-family: inherit; }
 .toast { z-index: 2700; animation: toastIn .2s ease-out; }@keyframes toastIn { from { opacity: 0; transform: translate(-50%,8px); } }
 .map-picker-full { width: 100%; justify-content: center; margin-top: 10px; }.inline-location-picker { padding: 10px; margin-top: 10px; border: 1px solid #e4eaf1; border-radius: 16px; background: #fff; }.confirm-map-point { width: 100%; padding: 12px; border-radius: 11px; background: #2786f8; color: #fff; font-size: 13px; font-weight: 700; }.confirm-map-point:disabled { opacity: .5; }
 .image-preview-strip { display: flex; width: 100%; gap: 8px; overflow-x: auto; padding-bottom: 2px; }.image-preview-item { position: relative; flex: 0 0 74px; }.image-preview-item img { width: 74px; height: 58px; border-radius: 10px; object-fit: cover; }.image-preview-item button { position: absolute; top: 3px; right: 3px; display: grid; place-items: center; width: 21px; height: 21px; border-radius: 50%; background: rgba(16,29,46,.78); color: #fff; }
+
+/* ============================================
+   ★★★ DARK THEME — ПОЛНОЕ ПОКРЫТИЕ ★★★
+   Всё в одном блоке, с !important, чтобы перебить
+   любые светлые правила в этом файле и в responsive.css
+   ============================================ */
+
+body[data-theme="dark"] {
+  --vk-bg: #15171c;
+  --vk-card: #1e2128;
+  --vk-text: #e8eaed;
+  --vk-text-secondary: #8b95a5;
+  --vk-divider: #2b3038;
+  --vk-blue-light: #1c2a3d;
+  background: #15171c !important;
+  color: #e8eaed !important;
+}
+
+/* Фон и основные контейнеры */
+body[data-theme="dark"],
+body[data-theme="dark"] #root,
+body[data-theme="dark"] .app-container,
+body[data-theme="dark"] .main-content,
+body[data-theme="dark"] .content-area,
+body[data-theme="dark"] .mobile-header,
+body[data-theme="dark"] .search-bar,
+body[data-theme="dark"] .tabs-row,
+body[data-theme="dark"] .quick-filters {
+  background: #15171c !important;
+  color: #e8eaed !important;
+}
+
+/* Сайдбар */
+body[data-theme="dark"] .desktop-sidebar {
+  background: #1e2128 !important;
+  border-color: #2b3038 !important;
+}
+body[data-theme="dark"] .sidebar-logo { border-color: #2b3038 !important; }
+body[data-theme="dark"] .sidebar-logo-icon { background: #2786f8 !important; color: #fff !important; }
+body[data-theme="dark"] .sidebar-logo-text h2 { color: #e8eaed !important; }
+body[data-theme="dark"] .sidebar-logo-team { color: #8b95a5 !important; }
+body[data-theme="dark"] .sidebar-item {
+  color: #8b95a5 !important;
+  background: transparent !important;
+}
+body[data-theme="dark"] .sidebar-item:hover {
+  background: #262a33 !important;
+  color: #5ea4ff !important;
+}
+body[data-theme="dark"] .sidebar-item.active {
+  background: #1c3a5e !important;
+  color: #5ea4ff !important;
+}
+body[data-theme="dark"] .sidebar-footer {
+  color: #8b95a5 !important;
+  border-color: #2b3038 !important;
+}
+
+/* Шапка */
+body[data-theme="dark"] .mobile-header h1 { color: #f0f2f5 !important; }
+body[data-theme="dark"] .greeting { color: #8b95a5 !important; }
+body[data-theme="dark"] .header-location { color: #5ea4ff !important; }
+body[data-theme="dark"] .header-location .pin { color: #5ea4ff !important; }
+body[data-theme="dark"] .header-more {
+  background: #262a33 !important;
+  color: #c5cbd5 !important;
+}
+body[data-theme="dark"] .header-more.active {
+  background: #1c3a5e !important;
+  color: #5ea4ff !important;
+}
+
+/* Поиск */
+body[data-theme="dark"] .search-icon { color: #8b95a5 !important; }
+body[data-theme="dark"] .search-bar input {
+  background: #262a33 !important;
+  color: #e8eaed !important;
+  border-color: transparent !important;
+}
+body[data-theme="dark"] .search-bar input::placeholder { color: #8b95a5 !important; }
+body[data-theme="dark"] .search-bar input:focus {
+  border-color: #2786f8 !important;
+  background: #1e2128 !important;
+}
+body[data-theme="dark"] .filter-btn {
+  background: #262a33 !important;
+  color: #c5cbd5 !important;
+}
+
+/* Табы и фильтры */
+body[data-theme="dark"] .tabs-row { background: #262a33 !important; }
+body[data-theme="dark"] .tab-btn {
+  background: transparent !important;
+  color: #8b95a5 !important;
+}
+body[data-theme="dark"] .tab-btn:hover:not(.active) { background: #2f3540 !important; }
+body[data-theme="dark"] .tab-btn.active {
+  background: #1c3a5e !important;
+  color: #5ea4ff !important;
+}
+body[data-theme="dark"] .chip {
+  background: #262a33 !important;
+  color: #c5cbd5 !important;
+}
+body[data-theme="dark"] .chip:hover { background: #2f3540 !important; }
+body[data-theme="dark"] .chip.active {
+  background: #2786f8 !important;
+  color: #fff !important;
+}
+
+/* Карточки событий */
+body[data-theme="dark"] .event-card-horizontal {
+  background: #1e2128 !important;
+  border-color: #2b3038 !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4) !important;
+}
+body[data-theme="dark"] .event-card-horizontal:hover {
+  box-shadow: 0 4px 16px rgba(39, 134, 248, 0.25) !important;
+}
+body[data-theme="dark"] .event-card-horizontal h3 { color: #f0f2f5 !important; }
+body[data-theme="dark"] .event-card-description { color: #8b95a5 !important; }
+body[data-theme="dark"] .event-card-meta { color: #8b95a5 !important; }
+body[data-theme="dark"] .category-tag {
+  background: #1c3a5e !important;
+  color: #5ea4ff !important;
+}
+body[data-theme="dark"] .like-btn { color: #8b95a5 !important; }
+body[data-theme="dark"] .like-btn.liked { color: #e44762 !important; }
+body[data-theme="dark"] .event-card-footer { border-color: #2b3038 !important; }
+body[data-theme="dark"] .event-owner-badge {
+  background: #1a3a26 !important;
+  color: #6edc8c !important;
+}
+body[data-theme="dark"] .event-owner-trigger {
+  background: #262a33 !important;
+  color: #c5cbd5 !important;
+}
+body[data-theme="dark"] .event-owner-dropdown {
+  background: #1e2128 !important;
+  border-color: #2b3038 !important;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.5) !important;
+}
+body[data-theme="dark"] .event-owner-dropdown button { color: #e8eaed !important; }
+body[data-theme="dark"] .event-owner-dropdown button:hover {
+  background: #2f3540 !important;
+}
+body[data-theme="dark"] .event-owner-dropdown button + button {
+  border-top-color: #2b3038 !important;
+}
+
+/* Кнопки */
+body[data-theme="dark"] .join-btn-small:not(:disabled) {
+  background: #2786f8 !important;
+  color: #fff !important;
+}
+body[data-theme="dark"] .join-btn-small.leave {
+  background: #2a1a1c !important;
+  color: #f08080 !important;
+  box-shadow: inset 0 0 0 1px #5a2a2e !important;
+}
+
+/* Bottom nav */
+body[data-theme="dark"] .bottom-nav {
+  background: #1e2128 !important;
+  border-color: #2b3038 !important;
+  box-shadow: 0 -5px 18px rgba(0, 0, 0, 0.5) !important;
+}
+body[data-theme="dark"] .bottom-nav button { color: #8b95a5 !important; }
+body[data-theme="dark"] .bottom-nav button.active { color: #5ea4ff !important; }
+body[data-theme="dark"] .bottom-nav .create-btn,
+body[data-theme="dark"] .bottom-nav .create-btn.active {
+  background: transparent !important;
+  color: #8b95a5 !important;
+}
+body[data-theme="dark"] .bottom-nav .create-btn.active { color: #5ea4ff !important; }
+body[data-theme="dark"] .bottom-nav .icon-plus {
+  background: #2786f8 !important;
+  color: #fff !important;
+}
+
+/* Модалки */
+body[data-theme="dark"] .modal-overlay { background: rgba(0, 0, 0, 0.75) !important; }
+body[data-theme="dark"] .modal-content {
+  background: #1e2128 !important;
+  color: #e8eaed !important;
+}
+body[data-theme="dark"] .modal-header h2 { color: #f0f2f5 !important; }
+body[data-theme="dark"] .close-btn {
+  background: #262a33 !important;
+  color: #c5cbd5 !important;
+}
+body[data-theme="dark"] .filters-handle { background: #3a4150 !important; }
+body[data-theme="dark"] .filter-row-v2 { border-color: #2b3038 !important; }
+body[data-theme="dark"] .filter-label { color: #c5cbd5 !important; }
+body[data-theme="dark"] .pushkin-toggle-v2 { border-color: #2b3038 !important; }
+body[data-theme="dark"] .pushkin-icon { background: #1a3a26 !important; color: #6edc8c !important; }
+body[data-theme="dark"] .pushkin-title { color: #c5cbd5 !important; }
+body[data-theme="dark"] .pushkin-subtitle { color: #8b95a5 !important; }
+body[data-theme="dark"] .reset-btn {
+  background: #262a33 !important;
+  color: #5ea4ff !important;
+}
+
+/* Детальная карточка */
+body[data-theme="dark"] .detail-body {
+  background: #15171c !important;
+  color: #e8eaed !important;
+}
+body[data-theme="dark"] .detail-body h2 { color: #f0f2f5 !important; }
+body[data-theme="dark"] .detail-description { color: #8b95a5 !important; }
+body[data-theme="dark"] .detail-top-facts div { color: #8b95a5 !important; }
+body[data-theme="dark"] .detail-top-facts strong { color: #c5cbd5 !important; }
+body[data-theme="dark"] .detail-top-facts small { color: #8b95a5 !important; }
+body[data-theme="dark"] .detail-section {
+  background: #1e2128 !important;
+  border-color: #2b3038 !important;
+}
+body[data-theme="dark"] .detail-section h3 { color: #f0f2f5 !important; }
+body[data-theme="dark"] .detail-section p { color: #a8b2c1 !important; }
+body[data-theme="dark"] .venue-card,
+body[data-theme="dark"] .organizer-card {
+  background: #262a33 !important;
+  border-color: #2b3038 !important;
+  color: #e8eaed !important;
+}
+body[data-theme="dark"] .venue-card strong,
+body[data-theme="dark"] .organizer-card strong { color: #f0f2f5 !important; }
+body[data-theme="dark"] .venue-card small,
+body[data-theme="dark"] .organizer-card small { color: #8b95a5 !important; }
+body[data-theme="dark"] .organizer-mark { background: #1c3a5e !important; color: #5ea4ff !important; }
+body[data-theme="dark"] .detail-actions {
+  background: rgba(30, 33, 40, 0.96) !important;
+  box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.5) !important;
+}
+body[data-theme="dark"] .joined-status {
+  background: #1a3a26 !important;
+  color: #6edc8c !important;
+}
+body[data-theme="dark"] .leave-btn {
+  background: transparent !important;
+  color: #f08080 !important;
+}
+body[data-theme="dark"] .share-btn {
+  background: #1c3a5e !important;
+  color: #5ea4ff !important;
+}
+body[data-theme="dark"] .hero-round-btn {
+  background: rgba(30, 33, 40, 0.9) !important;
+  color: #c5cbd5 !important;
+}
+body[data-theme="dark"] .hero-like.active { color: #e44762 !important; background: #1e2128 !important; }
+body[data-theme="dark"] .gallery-arrow {
+  background: rgba(30, 33, 40, 0.9) !important;
+  color: #c5cbd5 !important;
+}
+body[data-theme="dark"] .event-location-map { background: #262a33 !important; }
+body[data-theme="dark"] .event-location-map > a {
+  background: #1e2128 !important;
+  color: #c5cbd5 !important;
+}
+body[data-theme="dark"] .event-location-unavailable { color: #8b95a5 !important; }
+
+/* Форма создания */
+body[data-theme="dark"] .create-header h1 { color: #f0f2f5 !important; }
+body[data-theme="dark"] .create-subtitle { color: #8b95a5 !important; }
+body[data-theme="dark"] .back-btn {
+  background: #262a33 !important;
+  color: #c5cbd5 !important;
+}
+body[data-theme="dark"] .form-group label { color: #c5cbd5 !important; }
+body[data-theme="dark"] .input-with-icon,
+body[data-theme="dark"] .textarea-with-icon {
+  background: #262a33 !important;
+  border-color: #2b3038 !important;
+  color: #e8eaed !important;
+}
+body[data-theme="dark"] .input-with-icon input,
+body[data-theme="dark"] .input-with-icon select,
+body[data-theme="dark"] .textarea-with-icon textarea {
+  color: #e8eaed !important;
+  background: transparent !important;
+}
+body[data-theme="dark"] .input-with-icon input::placeholder,
+body[data-theme="dark"] .textarea-with-icon textarea::placeholder {
+  color: #6b7688 !important;
+}
+body[data-theme="dark"] .input-with-icon:focus-within,
+body[data-theme="dark"] .textarea-with-icon:focus-within {
+  background: #1e2128 !important;
+  border-color: #2786f8 !important;
+}
+body[data-theme="dark"] .input-with-icon.error,
+body[data-theme="dark"] .textarea-with-icon.error {
+  background: #2a1a1c !important;
+  border-color: #b3261e !important;
+}
+body[data-theme="dark"] .format-segmented { background: #262a33 !important; }
+body[data-theme="dark"] .format-segmented button { color: #8b95a5 !important; }
+body[data-theme="dark"] .format-segmented button.active {
+  background: #1c3a5e !important;
+  color: #5ea4ff !important;
+}
+body[data-theme="dark"] .image-upload-row {
+  background: #262a33 !important;
+  border-color: #2b3038 !important;
+}
+body[data-theme="dark"] .image-upload-row p { color: #8b95a5 !important; }
+body[data-theme="dark"] .image-placeholder {
+  background: #1c3a5e !important;
+  color: #5ea4ff !important;
+}
+body[data-theme="dark"] .upload-image-btn {
+  background: #1c3a5e !important;
+  color: #5ea4ff !important;
+}
+body[data-theme="dark"] .checkbox-group { background: #1c3a5e !important; }
+body[data-theme="dark"] .checkbox-group label { color: #c5cbd5 !important; }
+body[data-theme="dark"] .address-suggestions {
+  background: #1e2128 !important;
+  border-color: #2b3038 !important;
+}
+body[data-theme="dark"] .address-suggestions button {
+  color: #c5cbd5 !important;
+}
+body[data-theme="dark"] .address-suggestions button:hover {
+  background: #262a33 !important;
+}
+body[data-theme="dark"] .address-suggestions small { color: #8b95a5 !important; }
+body[data-theme="dark"] .inline-location-picker {
+  background: #1e2128 !important;
+  border-color: #2b3038 !important;
+}
+body[data-theme="dark"] .confirm-map-point {
+  background: #2786f8 !important;
+  color: #fff !important;
+}
+body[data-theme="dark"] .limit-hint,
+body[data-theme="dark"] .char-counter,
+body[data-theme="dark"] .hint-text-with-icon { color: #8b95a5 !important; }
+body[data-theme="dark"] .select-chevron { color: #8b95a5 !important; }
+
+/* Профиль */
+body[data-theme="dark"] .profile-card {
+  background: linear-gradient(135deg, #1c3a5e 0%, #1e2128 100%) !important;
+}
+body[data-theme="dark"] .profile-info h3 { color: #f0f2f5 !important; }
+body[data-theme="dark"] .profile-id,
+body[data-theme="dark"] .profile-username { color: #8b95a5 !important; }
+body[data-theme="dark"] .profile-stats {
+  background: #1e2128 !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+}
+body[data-theme="dark"] .stat-item { border-color: #2b3038 !important; }
+body[data-theme="dark"] .stat-value { color: #5ea4ff !important; }
+body[data-theme="dark"] .stat-label { color: #8b95a5 !important; }
+body[data-theme="dark"] .profile-section {
+  background: #1e2128 !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+}
+body[data-theme="dark"] .profile-section h4 { color: #8b95a5 !important; }
+body[data-theme="dark"] .settings-row,
+body[data-theme="dark"] .settings-row-button {
+  color: #e8eaed !important;
+  border-color: #2b3038 !important;
+}
+body[data-theme="dark"] .about-text {
+  background: #262a33 !important;
+  color: #c5cbd5 !important;
+}
+body[data-theme="dark"] .profile-footer { color: #8b95a5 !important; }
+body[data-theme="dark"] .logout-btn { color: #f08080 !important; }
+
+/* Switch */
+body[data-theme="dark"] .slider { background: #3a4150 !important; }
+body[data-theme="dark"] .switch input:checked + .slider { background: #2786f8 !important; }
+body[data-theme="dark"] .slider::before { background: #e8eaed !important; }
+
+/* Мои события */
+body[data-theme="dark"] .my-events-tabs { background: #262a33 !important; }
+body[data-theme="dark"] .my-tab { color: #8b95a5 !important; }
+body[data-theme="dark"] .my-tab.active {
+  background: #1e2128 !important;
+  color: #5ea4ff !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3) !important;
+}
+body[data-theme="dark"] .page-title { color: #f0f2f5 !important; }
+
+/* Пустые состояния */
+body[data-theme="dark"] .empty-state { color: #8b95a5 !important; }
+body[data-theme="dark"] .empty-state h3 { color: #c5cbd5 !important; }
+
+/* Сортировка */
+body[data-theme="dark"] .sort-chip {
+  background: #262a33 !important;
+  color: #8b95a5 !important;
+}
+body[data-theme="dark"] .sort-chip.active {
+  background: #1c3a5e !important;
+  color: #5ea4ff !important;
+}
+
+/* Отзывы */
+body[data-theme="dark"] .review-item { background: #262a33 !important; }
+body[data-theme="dark"] .review-head strong { color: #e8eaed !important; }
+body[data-theme="dark"] .review-text { color: #c5cbd5 !important; }
+body[data-theme="dark"] .reviews-empty { color: #8b95a5 !important; }
+body[data-theme="dark"] .review-form { border-color: #2b3038 !important; }
+body[data-theme="dark"] .review-form textarea {
+  background: #262a33 !important;
+  border-color: #2b3038 !important;
+  color: #e8eaed !important;
+}
+body[data-theme="dark"] .review-form textarea::placeholder { color: #6b7688 !important; }
+body[data-theme="dark"] .review-star { color: #3a4150 !important; }
+body[data-theme="dark"] .review-star.active { color: #f5a200 !important; }
+
+/* Похожие */
+body[data-theme="dark"] .related-card {
+  background: #262a33 !important;
+  border-color: #2b3038 !important;
+}
+body[data-theme="dark"] .related-card strong { color: #e8eaed !important; }
+body[data-theme="dark"] .related-card small { color: #8b95a5 !important; }
+
+/* Skeleton */
+body[data-theme="dark"] .skeleton-image,
+body[data-theme="dark"] .skeleton-line {
+  background: linear-gradient(90deg, #262a33 0%, #2f3540 40%, #262a33 80%) !important;
+  background-size: 800px 100% !important;
+}
+
+/* Sheet (выбор города) */
+body[data-theme="dark"] .app-sheet { background: #1e2128 !important; }
+body[data-theme="dark"] .app-sheet-head h2 { color: #f0f2f5 !important; }
+body[data-theme="dark"] .app-sheet-head button {
+  background: #262a33 !important;
+  color: #c5cbd5 !important;
+}
+body[data-theme="dark"] .city-option { color: #c5cbd5 !important; }
+body[data-theme="dark"] .city-option.active {
+  background: #1c3a5e !important;
+  color: #5ea4ff !important;
+}
+
+/* Header menu */
+body[data-theme="dark"] .header-menu {
+  background: #1e2128 !important;
+  border-color: #2b3038 !important;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5) !important;
+}
+body[data-theme="dark"] .header-menu button { color: #c5cbd5 !important; }
+body[data-theme="dark"] .header-menu button:hover {
+  background: #262a33 !important;
+  color: #5ea4ff !important;
+}
+
+/* Toast */
+body[data-theme="dark"] .toast {
+  background: #2a3040 !important;
+  color: #f0f2f5 !important;
+}
+
+/* Карта */
+body[data-theme="dark"] .map-screen .leaflet-container {
+  background: #1e2128 !important;
+}
+body[data-theme="dark"] .map-float-button {
+  background: #1e2128 !important;
+  color: #c5cbd5 !important;
+}
+body[data-theme="dark"] .map-event-preview {
+  background: #1e2128 !important;
+  box-shadow: 0 -3px 16px rgba(0, 0, 0, 0.5) !important;
+}
+body[data-theme="dark"] .map-sheet-handle { background: #3a4150 !important; }
+
+/* Delete dialog */
+body[data-theme="dark"] .delete-event-dialog {
+  background: #1e2128 !important;
+  color: #e8eaed !important;
+}
+body[data-theme="dark"] .delete-event-dialog h2 { color: #f0f2f5 !important; }
+body[data-theme="dark"] .delete-event-actions button {
+  background: #262a33 !important;
+  color: #c5cbd5 !important;
+}
+body[data-theme="dark"] .delete-event-actions .delete-event-confirm {
+  background: #d93448 !important;
+  color: #fff !important;
+}
+
+/* Скроллбар */
+body[data-theme="dark"] .content-area::-webkit-scrollbar-thumb {
+  background: #3a4150 !important;
+}
