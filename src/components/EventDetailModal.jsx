@@ -52,10 +52,7 @@ const EventDetailModal = ({
 
   return (
     <div className="modal-overlay detail-overlay" onClick={onClose}>
-      <div
-        className="modal-content detail-modal"
-        onClick={(e) => e.stopPropagation()}
-      >
+      <div className="modal-content detail-modal" onClick={(e) => e.stopPropagation()}>
         <div className={`detail-hero ${isOwner ? 'is-owner' : ''}`}>
           {isOwner && <EventOwnerMenu event={event} onDelete={onDelete} />}
           <img
@@ -134,9 +131,7 @@ const EventDetailModal = ({
             <img src={gallery[0]} alt="" />
             <span>
               <strong>{event.organizer?.name || 'Организатор'}</strong>
-              <small>
-                {isOwner || isJoined ? event.address : event.district}
-              </small>
+              <small>{isOwner || isJoined ? event.address : event.district}</small>
             </span>
             <Icon name="chevronRight" size={21} />
           </button>
@@ -146,8 +141,8 @@ const EventDetailModal = ({
           <section className="detail-section">
             <h3>О событии</h3>
             <p>
-              Встречаемся в дружелюбной атмосфере, чтобы интересно провести
-              время и познакомиться с новыми людьми.
+              Встречаемся в дружелюбной атмосфере, чтобы интересно провести время
+              и познакомиться с новыми людьми.
             </p>
           </section>
 
@@ -180,10 +175,7 @@ const EventDetailModal = ({
             ) : isJoined ? (
               <>
                 <div className="joined-status">Вы участвуете</div>
-                <button
-                  className="primary-btn"
-                  onClick={() => onOpenChat(event)}
-                >
+                <button className="primary-btn" onClick={() => onOpenChat(event)}>
                   Перейти в чат
                 </button>
                 <button className="leave-btn" onClick={() => onLeave(event)}>
