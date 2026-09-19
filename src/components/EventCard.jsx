@@ -11,20 +11,36 @@ const EventCard = ({
   isLiked,
   onToggleLike,
   isOwner = false,
-  onDelete
+  onDelete,
+  onEdit,
+  pending,
 }) => {
+  const isFull = !isOwner && event.maxParticipants && event.participants >= event.maxParticipants && !isJoined;
+  const isPending = Boolean(pending);
+
   const actionButton = (
     <button
       type="button"
       className={`join-btn-small ${!isOwner && isJoined ? 'leave' : ''}`}
+      disabled={isPending || isFull}
       onClick={(e) => {
         e.stopPropagation();
+        if (isPending) return;
         if (isOwner) onClick(event);
+        else if (isFull) return;
         else if (isJoined) onLeave?.(event);
         else onJoin(event);
       }}
     >
-      {isOwner ? 'Открыть событие' : isJoined ? 'Отказаться' : 'Присоединиться'}
+      {isPending
+        ? '…'
+        : isOwner
+          ? 'Открыть событие'
+          : isFull
+            ? 'Мест нет'
+            : isJoined
+              ? 'Отказаться'
+              : 'Присоединиться'}
     </button>
   );
 
@@ -40,13 +56,10 @@ const EventCard = ({
       <div className="event-card-body">
         <div className="event-card-top">
           <span className="category-tag">{event.category}</span>
-          {isOwner && <EventOwnerMenu event={event} onDelete={onDelete} />}
+          {isOwner && <EventOwnerMenu event={event} onDelete={onDelete} onEdit={onEdit} />}
           <button
             className={`like-btn ${isLiked ? 'liked' : ''}`}
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggleLike?.(event.id);
-            }}
+            onClick={(e) => { e.stopPropagation(); onToggleLike?.(event.id); }}
             aria-label="Нравится"
           >
             <Icon name="heart" size={22} filled={isLiked} />
@@ -59,15 +72,20 @@ const EventCard = ({
         <div className="event-card-meta">
           <span><Icon name="calendar" size={15} /> {event.date}</span>
           <span><Icon name="pin" size={15} /> {event.distance}</span>
-          <span><Icon name="people" size={15} /> {event.participants} участников</span>
+          <span>
+            <Icon name="people" size={15} /> {event.participants}
+            {event.maxParticipants ? ` / ${event.maxParticipants}` : ''} участников
+          </span>
         </div>
 
         {!isOwner && actionButton}
       </div>
-      {isOwner && <div className="event-card-footer">
-        <span className="event-owner-badge">Вы организатор</span>
-        {actionButton}
-      </div>}
+      {isOwner && (
+        <div className="event-card-footer">
+          <span className="event-owner-badge">Вы организатор</span>
+          {actionButton}
+        </div>
+      )}
     </div>
   );
 };

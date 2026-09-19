@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { maxBridge } from '../utils/maxBridge';
 import Icon from './Icon';
 
-const Profile = ({ user, joinedIds, createdCount, onLogout }) => {
+const Profile = ({ user, joinedIds, createdCount, notificationsOn, onToggleNotifications, onLogout }) => {
   const [showAbout, setShowAbout] = useState(false);
 
   const userName = user?.first_name
@@ -15,27 +14,17 @@ const Profile = ({ user, joinedIds, createdCount, onLogout }) => {
     <div className="profile-page">
       <h2 className="page-title">Профиль</h2>
 
-      {/* Карточка пользователя */}
       <div className="profile-card">
         <div className="profile-avatar">
-          {user?.photo_url ? (
-            <img src={user.photo_url} alt={userName} />
-          ) : (
-            <span>{userInitial}</span>
-          )}
+          {user?.photo_url ? <img src={user.photo_url} alt={userName} /> : <span>{userInitial}</span>}
         </div>
         <div className="profile-info">
           <h3>{userName}</h3>
-          <p className="profile-id">
-            {user?.id ? `ID: ${user.id}` : 'Гость'}
-          </p>
-          <p className="profile-username">
-            {user?.username ? `@${user.username}` : ''}
-          </p>
+          <p className="profile-id">{user?.id ? `ID: ${user.id}` : 'Гость'}</p>
+          <p className="profile-username">{user?.username ? `@${user.username}` : ''}</p>
         </div>
       </div>
 
-      {/* Статистика */}
       <div className="profile-stats">
         <div className="stat-item">
           <div className="stat-value">{joinedIds.length}</div>
@@ -51,80 +40,53 @@ const Profile = ({ user, joinedIds, createdCount, onLogout }) => {
         </div>
       </div>
 
-      {/* Настройки */}
       <div className="profile-section">
         <h4>Настройки</h4>
-
         <div className="settings-row">
           <span><Icon name="calendar" size={19} /> Уведомления о событиях</span>
           <label className="switch">
-            <input type="checkbox" defaultChecked />
+            <input
+              type="checkbox"
+              checked={notificationsOn}
+              onChange={(e) => onToggleNotifications?.(e.target.checked)}
+            />
             <span className="slider"></span>
           </label>
         </div>
-
         <div className="settings-row">
           <span><Icon name="pin" size={19} /> Показывать мой район</span>
-          <label className="switch">
-            <input type="checkbox" defaultChecked />
-            <span className="slider"></span>
-          </label>
+          <label className="switch"><input type="checkbox" defaultChecked /><span className="slider"></span></label>
         </div>
-
         <div className="settings-row">
           <span><Icon name="grid" size={19} /> Тёмная тема</span>
-          <label className="switch">
-            <input type="checkbox" />
-            <span className="slider"></span>
-          </label>
+          <label className="switch"><input type="checkbox" /><span className="slider"></span></label>
         </div>
       </div>
 
-      {/* О приложении */}
       <div className="profile-section">
         <h4>О приложении</h4>
-        <button
-          className="settings-row-button"
-          onClick={() => setShowAbout(!showAbout)}
-        >
+        <button className="settings-row-button" onClick={() => setShowAbout(!showAbout)}>
           <span>О MAX Events</span>
           <span>{showAbout ? '▼' : '▶'}</span>
         </button>
-
-{showAbout && (
-  <div className="about-text">
-    <p>
-      <strong>MAX Events</strong> — сервис для поиска и создания
-      досуговых событий: спорт, настолки, культура, кино.
-    </p>
-    <p>Версия: 1.0.0 (MVP)</p>
-    <p>Разработчик: команда <strong>neutralname</strong></p>
-    <p>Обработка данных: 152-ФЗ</p>
-    <p>Модерация контента: активна</p>
-  </div>
-)}
+        {showAbout && (
+          <div className="about-text">
+            <p><strong>MAX Events</strong> — сервис для поиска и создания досуговых событий: спорт, настолки, культура, кино.</p>
+            <p>Версия: 1.0.0 (MVP)</p>
+            <p>Разработчик: команда <strong>neutralname</strong></p>
+            <p>Обработка данных: 152-ФЗ</p>
+            <p>Модерация контента: активна</p>
+          </div>
+        )}
       </div>
 
-      {/* Юридическая информация */}
       <div className="profile-section">
-        <button className="settings-row-button">
-          <span>Политика конфиденциальности</span>
-          <span>▶</span>
-        </button>
-        <button className="settings-row-button">
-          <span>Пользовательское соглашение</span>
-          <span>▶</span>
-        </button>
+        <button className="settings-row-button"><span>Политика конфиденциальности</span><span>▶</span></button>
+        <button className="settings-row-button"><span>Пользовательское соглашение</span><span>▶</span></button>
       </div>
 
-      {/* Кнопка выхода */}
-      <button className="logout-btn" onClick={onLogout}>
-        Выйти
-      </button>
-
-        <p className="profile-footer">
-        © 2026 MAX Events · Команда <strong>neutralname</strong>
-        </p>
+      <button className="logout-btn" onClick={onLogout}>Выйти</button>
+      <p className="profile-footer">© 2026 MAX Events · Команда <strong>neutralname</strong></p>
     </div>
   );
 };

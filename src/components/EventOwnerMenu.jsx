@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Icon from './Icon';
 
-export default function EventOwnerMenu({ event, onDelete }) {
+export default function EventOwnerMenu({ event, onDelete, onEdit }) {
   const [open, setOpen] = useState(false);
   const root = useRef(null);
+
   useEffect(() => {
     if (!open) return;
     const close = (e) => { if (!root.current?.contains(e.target)) setOpen(false); };
@@ -15,8 +16,30 @@ export default function EventOwnerMenu({ event, onDelete }) {
       document.removeEventListener('keydown', escape);
     };
   }, [open]);
-  return <div className="event-owner-menu" ref={root} onClick={(e) => e.stopPropagation()}>
-    <button type="button" className="event-owner-trigger" aria-label="Управление событием" aria-expanded={open} onClick={() => setOpen(!open)}><Icon name="more" /></button>
-    {open && <div className="event-owner-dropdown"><button type="button" onClick={() => { setOpen(false); onDelete(event); }}>Удалить событие</button></div>}
-  </div>;
+
+  return (
+    <div className="event-owner-menu" ref={root} onClick={(e) => e.stopPropagation()}>
+      <button
+        type="button"
+        className="event-owner-trigger"
+        aria-label="Управление событием"
+        aria-expanded={open}
+        onClick={() => setOpen(!open)}
+      >
+        <Icon name="more" />
+      </button>
+      {open && (
+        <div className="event-owner-dropdown">
+          {onEdit && (
+            <button type="button" onClick={() => { setOpen(false); onEdit(event); }}>
+              Редактировать
+            </button>
+          )}
+          <button type="button" onClick={() => { setOpen(false); onDelete(event); }}>
+            Удалить событие
+          </button>
+        </div>
+      )}
+    </div>
+  );
 }
