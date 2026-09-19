@@ -9,9 +9,9 @@ import CreateEventForm from './components/CreateEventForm';
 import MyEvents from './components/MyEvents';
 import Profile from './components/Profile';
 import Icon from './components/Icon';
+import { EventSkeletonList } from './components/EventSkeleton';
 import CityPickerModal from './components/CityPickerModal';
 import OrganizerModal from './components/OrganizerModal';
-import { EventSkeletonList } from './components/EventSkeleton';
 import {
   fetchEvents,
   createEvent,
@@ -25,12 +25,15 @@ import { maxBridge } from './utils/maxBridge';
 import { haversineDistance, formatDistance } from './utils/distance';
 import './App.css';
 
+// Город по умолчанию — Казань
 const DEFAULT_CITY = {
   name: 'Казань',
   lat: 55.796,
   lng: 49.108,
   country: 'Россия'
 };
+
+const CITY_STORAGE_KEY = 'max_events_selected_city';
 
 function App() {
   const [activeTab, setActiveTab] = useState('feed');
@@ -41,20 +44,38 @@ function App() {
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [filters, setFilters] = useState(null);
   const [selectedEvent, setSelectedEvent] = useState(null);
-  const [organizerToShow, setOrganizerToShow] = useState(null);
   const [joinedIds, setJoinedIds] = useState([]);
   const [likedIds, setLikedIds] = useState([]);
   const [user, setUser] = useState(null);
   const [userCoords, setUserCoords] = useState(null);
   const [toast, setToast] = useState(null);
   const [lastCreatedEventId, setLastCreatedEventId] = useState(null);
-  const [selectedCity, setSelectedCity] = useState(DEFAULT_CITY);
+  const [selectedCity, setSelectedCity] = useState(() => {
+    try {
+      const saved = localStorage.getItem(CITY_STORAGE_KEY);
+      return saved ? JSON.parse(saved) : DEFAULT_CITY;
+    } catch (e) {
+      return DEFAULT_CITY;
+    }
+  });
   const [isCityOpen, setIsCityOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [organizerToShow, setOrganizerToShow] = useState(null);
   const [pendingDelete, setPendingDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState('');
   const userId = user?.id ?? 'guest';
+
+  // ============================================
+  // Сохранение выбранного города
+  // ============================================
+  useEffect(() => {
+    try {
+      localStorage.setItem(CITY_STORAGE_KEY, JSON.stringify(selectedCity));
+    } catch (e) {
+      // ignore
+    }
+  }, [selectedCity]);
 
   const requestDelete = (event) => {
     if (!isEventOwner(event, userId)) return;
@@ -77,7 +98,9 @@ function App() {
       setPendingDelete(null);
       setToast('Событие удалено');
     } catch (error) {
-      setDeleteError(error.message || 'Не удалось удалить событие.');
+      setDeleteError(
+        error.message || 'Не удалось удалить событие. Попробуйте ещё раз.'
+      );
     } finally {
       setDeleting(false);
     }
@@ -89,6 +112,9 @@ function App() {
     console.info('[MVP analytics]', eventName, payload);
   };
 
+  // ============================================
+  // Инициализация MAX Bridge + геолокация
+  // ============================================
   useEffect(() => {
     maxBridge.init();
     const u = maxBridge.getUser();
@@ -108,7 +134,9 @@ function App() {
     track('feed_opened');
   }, []);
 
-  // Загружаем события при смене города
+  // ============================================
+  // Загрузка событий при смене города
+  // ============================================
   useEffect(() => {
     loadEvents(selectedCity.name);
   }, [selectedCity.name]);
@@ -131,6 +159,9 @@ function App() {
     }
   };
 
+  // ============================================
+  // Фильтрация событий
+  // ============================================
   const filteredEvents = useMemo(() => {
     let result = [...events];
 
@@ -209,6 +240,9 @@ function App() {
     return result;
   }, [events, searchQuery, quickFilter, filters, userCoords]);
 
+  // ============================================
+  // Обработчики
+  // ============================================
   const handleJoinEvent = async (event) => {
     if (isEventOwner(event, userId) || joinedIds.includes(event.id)) return;
 
@@ -229,7 +263,8 @@ function App() {
       maxBridge.sendData({
         action: 'join_event',
         eventId: event.id,
-        eventTitle: event.title
+        eventTitle: event.title,
+        eventTime: event.eventTime || null
       });
       setToast(`Вы участвуете: «${event.title}»`);
     } catch (e) {
@@ -274,11 +309,12 @@ function App() {
       );
       setToast(`Вы отменили участие: «${event.title}»`);
     } catch (e) {
-      setToast('Не удалось отменить участие.');
+      setToast('Не удалось отменить участие. Попробуйте ещё раз.');
     }
   };
 
   const handleEventClick = (event) => {
+    track('event_opened', { eventId: event.id });
     setSelectedEvent(event);
   };
 
@@ -288,6 +324,7 @@ function App() {
   };
 
   const handleOpenChat = (event) => {
+    track('chat_opened', { eventId: event.id });
     setToast(`Чат «${event.title}» откроется в MAX после подключения бота`);
   };
 
@@ -394,7 +431,10 @@ function App() {
                   joinedIds={joinedIds}
                   likedIds={likedIds}
                   onToggleLike={handleToggleLike}
-                  onCreate={() => setActiveTab('create')}
+                  onCreate={() => {
+                    track('create_started', { source: 'empty_feed' });
+                    setActiveTab('create');
+                  }}
                 />
               )}
 
@@ -448,7 +488,9 @@ function App() {
                         e.organizer && e.organizer.id === (user?.id || 'guest')
                     ).length
                   }
-                  onLogout={() => setToast('Профиль гостя остаётся активным')}
+                  onLogout={() =>
+                    setToast('Профиль гостя остаётся активным в MVP')
+                  }
                 />
               )}
             </>
@@ -467,6 +509,9 @@ function App() {
           </button>
           <button
             onClick={() => setActiveTab('create')}
+            onClickCapture={() =>
+              track('create_started', { source: 'navigation' })
+            }
             className={`create-btn ${activeTab === 'create' ? 'active' : ''}`}
           >
             <span className="icon-plus">
@@ -514,8 +559,9 @@ function App() {
           isOpen={Boolean(organizerToShow)}
           onClose={() => setOrganizerToShow(null)}
           organizer={organizerToShow}
-          eventsCount={events.filter((e) => e.organizer?.id === organizerToShow.id).length}
-          events={events.filter((e) => e.organizer?.id === organizerToShow.id)}
+          eventsCount={
+            events.filter((e) => e.organizer?.id === organizerToShow.id).length
+          }
         />
       )}
 
