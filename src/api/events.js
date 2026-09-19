@@ -2,12 +2,15 @@ import { MOCK_EVENTS } from '../data/mockEvents.js';
 import { isEventOwner } from '../utils/eventOwnership.js';
 
 const API = import.meta.env?.VITE_API_URL || 'http://localhost:3001';
-const USE_MOCK = import.meta.env?.VITE_USE_MOCK !== 'false';
+// Если сервер не запущен — можно поставить VITE_USE_MOCK=true, чтобы работать на моке.
+const USE_MOCK = import.meta.env?.VITE_USE_MOCK === 'true';
 
-let localEvents = [...MOCK_EVENTS];
-const localJoins = new Map(); // eventId -> Set(userId)
-let localReviews = []; // { id, eventId, userId, userName, rating, text, createdAt }
+// ============ МОК (только если VITE_USE_MOCK=true) ============
+let mockEvents = [...MOCK_EVENTS];
+const mockJoins = new Map();
+let mockReviews = [];
 
+// ============ API ============
 const apiFetch = async (path, options = {}) => {
   const res = await fetch(`${API}${path}`, {
     headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
@@ -24,7 +27,7 @@ const apiFetch = async (path, options = {}) => {
 export const fetchEvents = async (filters = {}) => {
   if (USE_MOCK) {
     await new Promise((r) => setTimeout(r, 150));
-    return localEvents;
+    return mockEvents;
   }
   const params = new URLSearchParams(filters).toString();
   return apiFetch(params ? `/api/events?${params}` : '/api/events');
@@ -33,7 +36,7 @@ export const fetchEvents = async (filters = {}) => {
 export const fetchJoinedIds = async (userId) => {
   if (USE_MOCK) {
     const ids = [];
-    for (const [eventId, users] of localJoins.entries()) {
+    for (const [eventId, users] of mockJoins.entries()) {
       if (users.has(String(userId))) ids.push(eventId);
     }
     return ids;
@@ -53,7 +56,7 @@ export const createEvent = async (eventData) => {
       reviewsCount: 0,
       createdAt: new Date().toISOString()
     };
-    localEvents = [newEvent, ...localEvents];
+    mockEvents = [newEvent, ...mockEvents];
     return newEvent;
   }
   return apiFetch('/api/events', { method: 'POST', body: JSON.stringify(eventData) });
@@ -61,12 +64,12 @@ export const createEvent = async (eventData) => {
 
 export const updateEvent = async (eventId, eventData, userId) => {
   if (USE_MOCK) {
-    const current = localEvents.find((e) => e.id === eventId);
+    const current = mockEvents.find((e) => e.id === eventId);
     if (!current) throw new Error('Событие не найдено');
     if (!isEventOwner(current, userId)) throw new Error('Редактировать может только организатор');
     await new Promise((r) => setTimeout(r, 150));
     const updated = { ...current, ...eventData, id: eventId };
-    localEvents = localEvents.map((e) => (e.id === eventId ? updated : e));
+    mockEvents = mockEvents.map((e) => (e.id === eventId ? updated : e));
     return updated;
   }
   return apiFetch(`/api/events/${eventId}`, {
@@ -77,21 +80,18 @@ export const updateEvent = async (eventId, eventData, userId) => {
 
 export const joinEvent = async (eventId, userId) => {
   if (USE_MOCK) {
-    const event = localEvents.find((e) => e.id === eventId);
+    const event = mockEvents.find((e) => e.id === eventId);
     if (!event) throw new Error('Событие не найдено');
     if (isEventOwner(event, userId)) throw new Error('Организатор не может записаться на своё событие');
-    if (event.maxParticipants && event.participants >= event.maxParticipants) {
-      throw new Error('Мест больше нет');
-    }
-    if (!localJoins.has(eventId)) localJoins.set(eventId, new Set());
-    if (localJoins.get(eventId).has(String(userId))) throw new Error('Вы уже участвуете');
+    if (event.maxParticipants && event.participants >= event.maxParticipants) throw new Error('Мест больше нет');
+    if (!mockJoins.has(eventId)) mockJoins.set(eventId, new Set());
+    if (mockJoins.get(eventId).has(String(userId))) throw new Error('Вы уже участвуете');
     await new Promise((r) => setTimeout(r, 100));
-    localJoins.get(eventId).add(String(userId));
-    localEvents = localEvents.map((e) =>
+    mockJoins.get(eventId).add(String(userId));
+    mockEvents = mockEvents.map((e) =>
       e.id === eventId ? { ...e, participants: e.participants + 1 } : e
     );
-    const updated = localEvents.find((e) => e.id === eventId);
-    return { success: true, participants: updated.participants };
+    return { success: true, participants: mockEvents.find((e) => e.id === eventId).participants };
   }
   return apiFetch(`/api/events/${eventId}/join`, {
     method: 'POST',
@@ -101,17 +101,16 @@ export const joinEvent = async (eventId, userId) => {
 
 export const leaveEvent = async (eventId, userId) => {
   if (USE_MOCK) {
-    const event = localEvents.find((e) => e.id === eventId);
+    const event = mockEvents.find((e) => e.id === eventId);
     if (!event) throw new Error('Событие не найдено');
     if (isEventOwner(event, userId)) throw new Error('Организатор не может отказаться от своего события');
-    if (!localJoins.get(eventId)?.has(String(userId))) throw new Error('Вы не участвуете');
+    if (!mockJoins.get(eventId)?.has(String(userId))) throw new Error('Вы не участвуете');
     await new Promise((r) => setTimeout(r, 100));
-    localJoins.get(eventId).delete(String(userId));
-    localEvents = localEvents.map((e) =>
+    mockJoins.get(eventId).delete(String(userId));
+    mockEvents = mockEvents.map((e) =>
       e.id === eventId ? { ...e, participants: Math.max(0, e.participants - 1) } : e
     );
-    const updated = localEvents.find((e) => e.id === eventId);
-    return { success: true, participants: updated.participants };
+    return { success: true, participants: mockEvents.find((e) => e.id === eventId).participants };
   }
   return apiFetch(`/api/events/${eventId}/leave`, {
     method: 'POST',
@@ -121,11 +120,12 @@ export const leaveEvent = async (eventId, userId) => {
 
 export const deleteEvent = async (eventId, userId) => {
   if (USE_MOCK) {
-    const event = localEvents.find((e) => e.id === eventId);
+    const event = mockEvents.find((e) => e.id === eventId);
     if (!event) throw new Error('Событие уже удалено');
     if (!isEventOwner(event, userId)) throw new Error('Удалить событие может только организатор');
-    localEvents = localEvents.filter((e) => e.id !== eventId);
-    localJoins.delete(eventId);
+    mockEvents = mockEvents.filter((e) => e.id !== eventId);
+    mockJoins.delete(eventId);
+    mockReviews = mockReviews.filter((r) => r.eventId !== eventId);
     return { success: true };
   }
   return apiFetch(`/api/events/${eventId}?userId=${encodeURIComponent(userId)}`, {
@@ -174,19 +174,19 @@ export const checkHealth = async () => {
 
 export const fetchReviews = async (eventId) => {
   if (USE_MOCK) {
-    return localReviews.filter((r) => r.eventId === eventId);
+    return mockReviews.filter((r) => r.eventId === eventId);
   }
   return apiFetch(`/api/events/${eventId}/reviews`);
 };
 
 export const addReview = async (review) => {
   if (USE_MOCK) {
-    const existing = localReviews.find(
+    const existing = mockReviews.find(
       (r) => r.eventId === review.eventId && String(r.userId) === String(review.userId)
     );
     if (existing) throw new Error('Вы уже оставили отзыв');
     const newReview = { ...review, id: Date.now(), createdAt: new Date().toISOString() };
-    localReviews = [newReview, ...localReviews];
+    mockReviews = [newReview, ...mockReviews];
     return newReview;
   }
   return apiFetch(`/api/events/${review.eventId}/reviews`, {
