@@ -4,6 +4,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import Icon from './Icon';
 import EventCard from './EventCard';
+import { isEventOwner } from '../utils/eventOwnership';
 
 const markerColor = {
   'Настольные игры': 'blue', Спорт: 'green', Культура: 'pink', Кино: 'orange', Музыка: 'violet', Прогулка: 'blue'
@@ -19,7 +20,7 @@ const categorySvg = {
   'Прогулка': '<svg viewBox="0 0 24 24"><circle cx="13" cy="5" r="2"/><path d="m11 9 3 3 3 1M11 9 8 13M14 12l-1 7M10 14l-3 5"/></svg>'
 };
 
-const EventMap = ({ events, onJoin, onLeave, onEventClick, joinedIds = [], likedIds = [], onToggleLike, city = 'Казань' }) => {
+const EventMap = ({ events, onJoin, onLeave, onDelete, userId, onEventClick, joinedIds = [], likedIds = [], onToggleLike, city = 'Казань' }) => {
   const [activeEvent, setActiveEvent] = useState(events[0] || null);
   useEffect(() => {
     const updated = events.find((event) => event.id === activeEvent?.id);
@@ -41,7 +42,7 @@ const EventMap = ({ events, onJoin, onLeave, onEventClick, joinedIds = [], liked
       </MapContainer>
       <button className="map-float-button compass-button" aria-label="Моё местоположение"><Icon name="compass" size={24} /></button>
       <button className="map-float-button layers-button" aria-label="Слои карты"><Icon name="layers" size={24} /></button>
-      {activeEvent && <div className="map-event-preview"><div className="map-sheet-handle" /><EventCard event={activeEvent} onJoin={onJoin} onLeave={onLeave} onClick={onEventClick} isJoined={joinedIds.includes(activeEvent.id)} isLiked={likedIds.includes(activeEvent.id)} onToggleLike={onToggleLike} /></div>}
+      {activeEvent && <div className="map-event-preview"><div className="map-sheet-handle" /><EventCard event={activeEvent} isOwner={isEventOwner(activeEvent, userId)} onDelete={onDelete} onJoin={onJoin} onLeave={onLeave} onClick={onEventClick} isJoined={joinedIds.includes(activeEvent.id)} isLiked={likedIds.includes(activeEvent.id)} onToggleLike={onToggleLike} /></div>}
     </div>
   );
 };

@@ -10,7 +10,9 @@ import MyEvents from './components/MyEvents';
 import Profile from './components/Profile';
 import Icon from './components/Icon';
 import { EventSkeletonList } from './components/EventSkeleton';
-import { fetchEvents, createEvent, joinEvent, leaveEvent } from './api/events';
+import { fetchEvents, createEvent, joinEvent, leaveEvent, deleteEvent } from './api/events';
+import { isEventOwner } from './utils/eventOwnership';
+import DeleteEventDialog from './components/DeleteEventDialog';
 import { maxBridge } from './utils/maxBridge';
 import { haversineDistance, formatDistance } from './utils/distance';
 import './App.css';
@@ -35,6 +37,37 @@ function App() {
   const [selectedCity, setSelectedCity] = useState('Казань');
   const [isCityOpen, setIsCityOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
+  const userId = user?.id ?? 'guest';
+
+  const requestDelete = (event) => {
+    if (!isEventOwner(event, userId)) return;
+    setDeleteError('');
+    setPendingDelete(event);
+  };
+
+  const confirmDelete = async () => {
+    if (!pendingDelete || deleting || !isEventOwner(pendingDelete, userId)) return;
+    setDeleting(true);
+    setDeleteError('');
+    try {
+      await deleteEvent(pendingDelete.id, userId);
+      const id = pendingDelete.id;
+      setEvents((items) => items.filter((item) => item.id !== id));
+      setJoinedIds((ids) => ids.filter((item) => item !== id));
+      setLikedIds((ids) => ids.filter((item) => item !== id));
+      setSelectedEvent((event) => event?.id === id ? null : event);
+      setLastCreatedEventId((previous) => previous === id ? null : previous);
+      setPendingDelete(null);
+      setToast('Событие удалено');
+    } catch (error) {
+      setDeleteError(error.message || 'Не удалось удалить событие. Попробуйте ещё раз.');
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const quickFilters = ['Сегодня', 'Бесплатно', 'Спорт', 'Культура', 'Онлайн'];
 
@@ -155,7 +188,7 @@ function App() {
   }, [events, searchQuery, quickFilter, filters, userCoords, selectedCity]);
 
   const handleJoinEvent = async (event) => {
-    if (joinedIds.includes(event.id)) return;
+    if (isEventOwner(event, userId) || joinedIds.includes(event.id)) return;
 
     try {
       maxBridge.haptic('medium');
@@ -203,7 +236,7 @@ function App() {
   };
 
   const handleLeaveEvent = async (event) => {
-    if (!joinedIds.includes(event.id)) return;
+    if (isEventOwner(event, userId) || !joinedIds.includes(event.id)) return;
     try {
       await leaveEvent(event.id, user?.id || 'guest');
       setJoinedIds((prev) => prev.filter((id) => id !== event.id));
@@ -293,6 +326,8 @@ function App() {
             <>
               {activeTab === 'feed' && (
                 <EventFeed
+                  userId={userId}
+                  onDelete={requestDelete}
                   events={filteredEvents}
                   onJoin={handleJoinEvent}
                   onLeave={handleLeaveEvent}
@@ -309,6 +344,8 @@ function App() {
 
               {activeTab === 'map' && (
                 <EventMap
+                  userId={userId}
+                  onDelete={requestDelete}
                   events={filteredEvents}
                   onJoin={handleJoinEvent}
                   onLeave={handleLeaveEvent}
@@ -332,6 +369,7 @@ function App() {
 
               {activeTab === 'my' && (
                 <MyEvents
+                  onDelete={requestDelete}
                   events={events}
                   onJoin={handleJoinEvent}
                   onLeave={handleLeaveEvent}
@@ -396,6 +434,7 @@ function App() {
 
       {selectedEvent && (
         <EventDetailModal
+          onDelete={requestDelete}
           event={selectedEvent}
           onClose={() => setSelectedEvent(null)}
           onJoin={handleJoinEvent}
@@ -407,6 +446,8 @@ function App() {
           userId={user?.id || 'guest'}
         />
       )}
+
+      {pendingDelete && <DeleteEventDialog event={pendingDelete} busy={deleting} error={deleteError} onCancel={() => setPendingDelete(null)} onConfirm={confirmDelete} />}
 
       {toast && (
         <button className="toast" onClick={() => setToast(null)}>

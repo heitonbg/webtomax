@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
 import EventCard from './EventCard';
+import { isEventOwner } from '../utils/eventOwnership';
 
-const MyEvents = ({ events, onJoin, onLeave, onEventClick, joinedIds, likedIds = [], onToggleLike, userId, showCreatedInitially }) => {
+const MyEvents = ({ events, onJoin, onLeave, onDelete, onEventClick, joinedIds, likedIds = [], onToggleLike, userId, showCreatedInitially }) => {
   const [tab, setTab] = useState(showCreatedInitially ? 'created' : 'joined'); // 'joined' | 'created'
 
   // События, на которые я записался
-  const joinedEvents = events.filter((e) => joinedIds.includes(e.id));
+  const joinedEvents = events.filter((e) => joinedIds.includes(e.id) && !isEventOwner(e, userId));
 
   // События, которые создал я
   const createdEvents = events.filter(
-    (e) => e.organizer && e.organizer.id === userId
+    (e) => isEventOwner(e, userId)
   );
 
   const displayEvents = tab === 'joined' ? joinedEvents : createdEvents;
@@ -59,7 +60,8 @@ const MyEvents = ({ events, onJoin, onLeave, onEventClick, joinedIds, likedIds =
               isJoined={joinedIds.includes(event.id)}
               isLiked={likedIds.includes(event.id)}
               onToggleLike={onToggleLike}
-              isOwner={event.organizer && event.organizer.id === userId}
+              isOwner={isEventOwner(event, userId)}
+              onDelete={onDelete}
             />
           ))}
         </div>

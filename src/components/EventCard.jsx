@@ -1,5 +1,6 @@
 import React from 'react';
 import Icon from './Icon';
+import EventOwnerMenu from './EventOwnerMenu';
 
 const EventCard = ({
   event,
@@ -8,12 +9,27 @@ const EventCard = ({
   onClick,
   isJoined,
   isLiked,
-  onToggleLike
+  onToggleLike,
+  isOwner = false,
+  onDelete
 }) => {
-  const displayLocation = isJoined ? event.address : event.district;
+  const actionButton = (
+    <button
+      type="button"
+      className={`join-btn-small ${!isOwner && isJoined ? 'leave' : ''}`}
+      onClick={(e) => {
+        e.stopPropagation();
+        if (isOwner) onClick(event);
+        else if (isJoined) onLeave?.(event);
+        else onJoin(event);
+      }}
+    >
+      {isOwner ? 'Открыть событие' : isJoined ? 'Отказаться' : 'Присоединиться'}
+    </button>
+  );
 
   return (
-    <div className="event-card-horizontal" onClick={() => onClick(event)}>
+    <div className={`event-card-horizontal ${isOwner ? 'event-card-owned' : ''}`} onClick={() => onClick(event)}>
       <div className="event-card-image">
         <img src={event.image} alt={event.title} loading="lazy" />
         <span className={`badge ${event.price === 'Бесплатно' ? 'free' : 'paid'}`}>
@@ -24,6 +40,7 @@ const EventCard = ({
       <div className="event-card-body">
         <div className="event-card-top">
           <span className="category-tag">{event.category}</span>
+          {isOwner && <EventOwnerMenu event={event} onDelete={onDelete} />}
           <button
             className={`like-btn ${isLiked ? 'liked' : ''}`}
             onClick={(e) => {
@@ -45,17 +62,12 @@ const EventCard = ({
           <span><Icon name="people" size={15} /> {event.participants} участников</span>
         </div>
 
-        <button
-          className={`join-btn-small ${isJoined ? 'leave' : ''}`}
-          onClick={(e) => {
-            e.stopPropagation();
-            if (isJoined) onLeave?.(event);
-            else onJoin(event);
-          }}
-        >
-          {isJoined ? 'Отказаться' : 'Присоединиться'}
-        </button>
+        {!isOwner && actionButton}
       </div>
+      {isOwner && <div className="event-card-footer">
+        <span className="event-owner-badge">Вы организатор</span>
+        {actionButton}
+      </div>}
     </div>
   );
 };

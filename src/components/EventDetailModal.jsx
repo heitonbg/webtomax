@@ -1,7 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import Icon from './Icon';
+import EventOwnerMenu from './EventOwnerMenu';
+import EventLocationMap from './EventLocationMap';
+import { isEventOwner } from '../utils/eventOwnership';
 
-const EventDetailModal = ({ event, onClose, onJoin, onLeave, onOpenChat, isJoined, isLiked, onToggleLike }) => {
+const EventDetailModal = ({ event, onClose, onJoin, onLeave, onDelete, onOpenChat, isJoined, isLiked, onToggleLike, userId }) => {
+  const isOwner = isEventOwner(event, userId);
   const [photoIndex, setPhotoIndex] = useState(0);
   const gallery = event.images?.length ? event.images : [event.image];
   useEffect(() => setPhotoIndex(0), [event.id]);
@@ -20,7 +24,8 @@ const EventDetailModal = ({ event, onClose, onJoin, onLeave, onOpenChat, isJoine
   return (
     <div className="modal-overlay detail-overlay" onClick={onClose}>
       <div className="modal-content detail-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="detail-hero">
+        <div className={`detail-hero ${isOwner ? 'is-owner' : ''}`}>
+          {isOwner && <EventOwnerMenu event={event} onDelete={onDelete} />}
           <img src={gallery[photoIndex]} alt={`${event.title}, фото ${photoIndex + 1}`} className="detail-image" />
           <button onClick={onClose} className="hero-round-btn hero-back" aria-label="Назад"><Icon name="arrowLeft" size={24} /></button>
           <button className={`hero-round-btn hero-like ${isLiked ? 'active' : ''}`} onClick={() => onToggleLike(event.id)} aria-label={isLiked ? 'Убрать из избранного' : 'В избранное'}><Icon name="heart" size={23} filled={isLiked} /></button>
@@ -40,15 +45,15 @@ const EventDetailModal = ({ event, onClose, onJoin, onLeave, onOpenChat, isJoine
           </div>
           <button className="venue-card" type="button">
             <img src={gallery[0]} alt="" />
-            <span><strong>{event.organizer?.name || 'Организатор'}</strong><small>{isJoined ? event.address : event.district}</small></span>
+            <span><strong>{event.organizer?.name || 'Организатор'}</strong><small>{isOwner || isJoined ? event.address : event.district}</small></span>
             <Icon name="chevronRight" size={21} />
           </button>
-          <div className="detail-map-preview"><div className="map-lines" /><span className="detail-map-pin"><Icon name="pin" size={34} filled /></span><button type="button"><Icon name="compass" size={17} /> Открыть в картах</button></div>
+          <EventLocationMap event={event} />
           <section className="detail-section"><h3>О событии</h3><p>Встречаемся в дружелюбной атмосфере, чтобы интересно провести время и познакомиться с новыми людьми. Подойдёт и тем, кто приходит один.</p></section>
           <section className="detail-section expectations"><h3>Что вас ждёт</h3><p>Большой выбор активностей и новых впечатлений</p><p>Дружелюбная компания и помощь организатора</p><p>Уютная атмосфера и общение</p></section>
           <button className="organizer-card" type="button"><span className="organizer-mark">{organizerInitials}</span><span><strong>{event.organizer?.name || 'Организатор'}</strong><small>Организатор события</small></span><Icon name="chevronRight" size={21} /></button>
           <div className="detail-actions">
-            {isJoined ? <><div className="joined-status">Вы участвуете</div><button className="primary-btn" onClick={() => onOpenChat(event)}>Перейти в чат</button><button className="leave-btn" onClick={() => onLeave(event)}>Отказаться</button></> : <button className="primary-btn" onClick={() => onJoin(event)}>Присоединиться</button>}
+            {isOwner ? <div className="joined-status">Вы организатор этого события. Управление — в меню «⋯» сверху.</div> : isJoined ? <><div className="joined-status">Вы участвуете</div><button className="primary-btn" onClick={() => onOpenChat(event)}>Перейти в чат</button><button className="leave-btn" onClick={() => onLeave(event)}>Отказаться</button></> : <button className="primary-btn" onClick={() => onJoin(event)}>Присоединиться</button>}
             <button className="share-btn" onClick={share}><Icon name="share" size={20} /> Поделиться</button>
           </div>
         </div>

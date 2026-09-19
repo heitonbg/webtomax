@@ -1,6 +1,7 @@
 import React from 'react';
 import EventCard from './EventCard';
 import Icon from './Icon';
+import { isEventOwner } from '../utils/eventOwnership';
 
 const EventFeed = ({
   events,
@@ -10,7 +11,9 @@ const EventFeed = ({
   joinedIds,
   likedIds,
   onToggleLike,
-  onCreate
+  onCreate,
+  userId,
+  onDelete
 }) => {
   if (!events.length) {
     return (
@@ -31,6 +34,8 @@ const EventFeed = ({
         <EventCard
           key={event.id}
           event={event}
+          isOwner={isEventOwner(event, userId)}
+          onDelete={onDelete}
           onJoin={onJoin}
           onLeave={onLeave}
           onClick={onEventClick}
