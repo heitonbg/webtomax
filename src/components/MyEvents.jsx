@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import EventCard from './EventCard';
 
-const MyEvents = ({ events, onJoin, onEventClick, joinedIds, userId }) => {
-  const [tab, setTab] = useState('joined'); // 'joined' | 'created'
+const MyEvents = ({ events, onJoin, onLeave, onEventClick, joinedIds, likedIds = [], onToggleLike, userId, showCreatedInitially }) => {
+  const [tab, setTab] = useState(showCreatedInitially ? 'created' : 'joined'); // 'joined' | 'created'
 
   // События, на которые я записался
   const joinedEvents = events.filter((e) => joinedIds.includes(e.id));
@@ -23,19 +23,19 @@ const MyEvents = ({ events, onJoin, onEventClick, joinedIds, userId }) => {
           className={`my-tab ${tab === 'joined' ? 'active' : ''}`}
           onClick={() => setTab('joined')}
         >
-          🎟️ Я участвую ({joinedEvents.length})
+          Участвую ({joinedEvents.length})
         </button>
         <button
           className={`my-tab ${tab === 'created' ? 'active' : ''}`}
           onClick={() => setTab('created')}
         >
-          ✨ Я создал ({createdEvents.length})
+          Организую ({createdEvents.length})
         </button>
       </div>
 
       {displayEvents.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-icon">{tab === 'joined' ? '🎟️' : '✨'}</div>
+          <div className="empty-icon">{tab === 'joined' ? '—' : '+'}</div>
           <h3>
             {tab === 'joined'
               ? 'Вы пока не участвуете ни в одном событии'
@@ -54,8 +54,11 @@ const MyEvents = ({ events, onJoin, onEventClick, joinedIds, userId }) => {
               key={event.id}
               event={event}
               onJoin={onJoin}
+              onLeave={onLeave}
               onClick={onEventClick}
               isJoined={joinedIds.includes(event.id)}
+              isLiked={likedIds.includes(event.id)}
+              onToggleLike={onToggleLike}
               isOwner={event.organizer && event.organizer.id === userId}
             />
           ))}

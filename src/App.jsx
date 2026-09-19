@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import ConsentScreen from './components/ConsentScreen';
 import DesktopSidebar from './components/DesktopSidebar';
 import SearchBar from './components/SearchBar';
 import EventFeed from './components/EventFeed';
@@ -9,16 +8,16 @@ import FiltersModal from './components/FiltersModal';
 import CreateEventForm from './components/CreateEventForm';
 import MyEvents from './components/MyEvents';
 import Profile from './components/Profile';
+import Icon from './components/Icon';
 import { EventSkeletonList } from './components/EventSkeleton';
-import { fetchEvents, createEvent, joinEvent } from './api/events';
+import { fetchEvents, createEvent, joinEvent, leaveEvent } from './api/events';
 import { maxBridge } from './utils/maxBridge';
 import { haversineDistance, formatDistance } from './utils/distance';
 import './App.css';
 
 function App() {
-  const [consent, setConsent] = useState(
-    () => localStorage.getItem('max_events_consent') === 'true'
-  );
+  // The prototype opens straight into the product flow. Consent can be added
+  // back when the real MAX identity and privacy flow are connected.
   const [activeTab, setActiveTab] = useState('feed');
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -31,8 +30,17 @@ function App() {
   const [likedIds, setLikedIds] = useState([]);
   const [user, setUser] = useState(null);
   const [userCoords, setUserCoords] = useState(null);
+  const [toast, setToast] = useState(null);
+  const [lastCreatedEventId, setLastCreatedEventId] = useState(null);
+  const [selectedCity, setSelectedCity] = useState('Казань');
+  const [isCityOpen, setIsCityOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const quickFilters = ['Сегодня', 'Бесплатно', 'Спорт', 'Культура', 'Онлайн'];
+
+  const track = (eventName, payload = {}) => {
+    console.info('[MVP analytics]', eventName, payload);
+  };
 
   useEffect(() => {
     maxBridge.init();
@@ -51,7 +59,14 @@ function App() {
     }
 
     loadEvents();
+    track('feed_opened');
   }, []);
+
+  useEffect(() => {
+    if (!toast) return undefined;
+    const timer = window.setTimeout(() => setToast(null), 3200);
+    return () => window.clearTimeout(timer);
+  }, [toast]);
 
   const loadEvents = async () => {
     try {
@@ -67,6 +82,7 @@ function App() {
 
   const filteredEvents = useMemo(() => {
     let result = [...events];
+    result = result.filter((event) => (event.city || 'Казань') === selectedCity);
 
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
@@ -89,16 +105,33 @@ function App() {
     }
 
     if (filters) {
+      const isOnline = (event) => event.format === 'Онлайн' || event.district === 'Онлайн';
+      const parseDistance = (distance) => {
+        const value = Number.parseFloat(String(distance).replace(',', '.'));
+        return Number.isFinite(value) ? value : Infinity;
+      };
       if (filters.category?.length) {
         result = result.filter((e) => filters.category.includes(e.category));
       }
       if (filters.price) {
-        result = result.filter((e) => e.price === filters.price);
+        result = result.filter((e) =>
+          filters.price === 'Платно' ? e.price !== 'Бесплатно' : e.price === filters.price
+        );
       }
       if (filters.format === 'Онлайн') {
-        result = result.filter((e) => e.district === 'Онлайн');
+        result = result.filter(isOnline);
       } else if (filters.format === 'Офлайн') {
-        result = result.filter((e) => e.district !== 'Онлайн');
+        result = result.filter((e) => !isOnline(e));
+      }
+      if (filters.time) {
+        result = result.filter((e) => e.date.includes(filters.time));
+      }
+      if (filters.distance) {
+        const maxDistance = Number.parseFloat(filters.distance.replace(/[^0-9.]/g, ''));
+        result = result.filter((e) => parseDistance(e.distance) <= maxDistance);
+      }
+      if (filters.pushkinCard) {
+        result = result.filter((e) => e.price === 'Пушкинская карта');
       }
     }
 
@@ -119,12 +152,7 @@ function App() {
     }
 
     return result;
-  }, [events, searchQuery, quickFilter, filters, userCoords]);
-
-  const handleConsent = () => {
-    localStorage.setItem('max_events_consent', 'true');
-    setConsent(true);
-  };
+  }, [events, searchQuery, quickFilter, filters, userCoords, selectedCity]);
 
   const handleJoinEvent = async (event) => {
     if (joinedIds.includes(event.id)) return;
@@ -138,13 +166,18 @@ function App() {
           e.id === event.id ? { ...e, participants: e.participants + 1 } : e
         )
       );
+      setSelectedEvent((prev) =>
+        prev?.id === event.id ? { ...prev, participants: prev.participants + 1 } : prev
+      );
+      track('join_clicked', { eventId: event.id });
+      track('join_success', { eventId: event.id });
       maxBridge.sendData({
         action: 'join_event',
         eventId: event.id,
         eventTitle: event.title,
         eventTime: event.eventTime || null
       });
-      maxBridge.showAlert(`✅ Вы записались на "${event.title}"`);
+      setToast(`Вы участвуете: «${event.title}»`);
     } catch (e) {
       maxBridge.showAlert('Не удалось присоединиться');
     }
@@ -161,27 +194,42 @@ function App() {
   const handleCreateEvent = async (newEvent) => {
     const created = await createEvent(newEvent);
     setEvents((prev) => [created, ...prev]);
-    setActiveTab('feed');
+    setLastCreatedEventId(created.id);
+    setActiveTab('my');
+    track('event_created', { title: created.title });
     maxBridge.haptic('success');
     maxBridge.sendData({ action: 'create_event', title: created.title });
-    maxBridge.showAlert(`🎉 Событие "${created.title}" создано!`);
+    setToast(`Событие «${created.title}» создано`);
   };
 
-  const handleEventClick = (event) => setSelectedEvent(event);
+  const handleLeaveEvent = async (event) => {
+    if (!joinedIds.includes(event.id)) return;
+    try {
+      await leaveEvent(event.id, user?.id || 'guest');
+      setJoinedIds((prev) => prev.filter((id) => id !== event.id));
+      setEvents((prev) => prev.map((item) => item.id === event.id ? { ...item, participants: Math.max(0, item.participants - 1) } : item));
+      setSelectedEvent((prev) => prev?.id === event.id ? { ...prev, participants: Math.max(0, prev.participants - 1) } : prev);
+      setToast(`Вы отменили участие: «${event.title}»`);
+    } catch (e) {
+      setToast('Не удалось отменить участие. Попробуйте ещё раз.');
+    }
+  };
+
+  const handleEventClick = (event) => {
+    track('event_opened', { eventId: event.id });
+    setSelectedEvent(event);
+  };
 
   const handleApplyFilters = (f) => {
     setFilters(f);
     setQuickFilter(null);
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('max_events_consent');
-    setConsent(false);
+  const handleOpenChat = (event) => {
+    // MAX group chat creation will be connected here when the bot API is ready.
+    track('chat_opened', { eventId: event.id });
+    setToast(`Чат «${event.title}» откроется в MAX после подключения бота`);
   };
-
-  if (!consent) {
-    return <ConsentScreen onAccept={handleConsent} />;
-  }
 
   const isExploreTab = activeTab === 'feed' || activeTab === 'map';
 
@@ -193,17 +241,12 @@ function App() {
         {isExploreTab && (
           <>
             <div className="mobile-header">
-              <h1>
-                События рядом
-                <span className="header-location">
-                  <span className="pin">📍</span>
-                  Казань
-                  <span className="chevron">▼</span>
-                </span>
-              </h1>
+              <div className="mobile-title-row"><h1>
+                События рядом <button className="header-location" onClick={() => setIsCityOpen(true)}><span className="pin"><Icon name="pin" size={17} filled /></span>{selectedCity}<span className="chevron"><Icon name="chevronDown" size={14} /></span></button>
+              </h1><button className={`header-more ${isMenuOpen ? 'active' : ''}`} onClick={() => setIsMenuOpen((value) => !value)} aria-label="Меню"><Icon name="more" size={24} /></button></div>
               {user && (
                 <p className="greeting">
-                  Больше, чем просто планы 💙
+                  Больше, чем просто планы
                 </p>
               )}
             </div>
@@ -219,17 +262,17 @@ function App() {
                 className={`tab-btn ${activeTab === 'feed' ? 'active' : ''}`}
                 onClick={() => setActiveTab('feed')}
               >
-                <span className="tab-icon">📅</span> Лента
+                <span className="tab-icon"><Icon name="calendar" size={21} /></span> Лента
               </button>
               <button
                 className={`tab-btn ${activeTab === 'map' ? 'active' : ''}`}
                 onClick={() => setActiveTab('map')}
               >
-                <span className="tab-icon">🗺️</span> Карта
+                <span className="tab-icon"><Icon name="map" size={21} /></span> Карта
               </button>
             </div>
 
-            <div className="quick-filters">
+            <div className="quick-filters" tabIndex="0" onWheel={(event) => { if (Math.abs(event.deltaY) > Math.abs(event.deltaX)) { event.preventDefault(); event.currentTarget.scrollLeft += event.deltaY; } }}>
               {quickFilters.map((f) => (
                 <button
                   key={f}
@@ -252,15 +295,29 @@ function App() {
                 <EventFeed
                   events={filteredEvents}
                   onJoin={handleJoinEvent}
+                  onLeave={handleLeaveEvent}
                   onEventClick={handleEventClick}
                   joinedIds={joinedIds}
                   likedIds={likedIds}
                   onToggleLike={handleToggleLike}
+                  onCreate={() => {
+                    track('create_started', { source: 'empty_feed' });
+                    setActiveTab('create');
+                  }}
                 />
               )}
 
               {activeTab === 'map' && (
-                <EventMap events={filteredEvents} onJoin={handleJoinEvent} />
+                <EventMap
+                  events={filteredEvents}
+                  onJoin={handleJoinEvent}
+                  onLeave={handleLeaveEvent}
+                  onEventClick={handleEventClick}
+                  joinedIds={joinedIds}
+                  likedIds={likedIds}
+                  onToggleLike={handleToggleLike}
+                  city={selectedCity}
+                />
               )}
 
               {activeTab === 'create' && (
@@ -269,6 +326,7 @@ function App() {
                   onCancel={() => setActiveTab('feed')}
                   userId={user?.id || 'guest'}
                   userName={user?.first_name || user?.name}
+                  city={selectedCity}
                 />
               )}
 
@@ -276,9 +334,13 @@ function App() {
                 <MyEvents
                   events={events}
                   onJoin={handleJoinEvent}
+                  onLeave={handleLeaveEvent}
                   onEventClick={handleEventClick}
                   joinedIds={joinedIds}
+                  likedIds={likedIds}
+                  onToggleLike={handleToggleLike}
                   userId={user?.id || 'guest'}
+                  showCreatedInitially={Boolean(lastCreatedEventId)}
                 />
               )}
 
@@ -292,7 +354,7 @@ function App() {
                         e.organizer && e.organizer.id === (user?.id || 'guest')
                     ).length
                   }
-                  onLogout={handleLogout}
+                  onLogout={() => setToast('Профиль гостя остаётся активным в MVP')}
                 />
               )}
             </>
@@ -304,20 +366,21 @@ function App() {
             onClick={() => setActiveTab('feed')}
             className={activeTab === 'feed' ? 'active' : ''}
           >
-            <span className="icon">🏠</span>
+            <span className="icon"><Icon name="home" size={23} filled /></span>
             <span>Главная</span>
           </button>
           <button
             onClick={() => setActiveTab('create')}
+            onClickCapture={() => track('create_started', { source: 'navigation' })}
             className={`create-btn ${activeTab === 'create' ? 'active' : ''}`}
           >
-            <span className="icon-plus">+</span>
+            <span className="icon-plus"><Icon name="plus" size={34} /></span>
           </button>
           <button
             onClick={() => setActiveTab('my')}
             className={activeTab === 'my' ? 'active' : ''}
           >
-            <span className="icon">👤</span>
+            <span className="icon"><Icon name="user" size={23} /></span>
             <span>Мои события</span>
           </button>
         </div>
@@ -336,10 +399,23 @@ function App() {
           event={selectedEvent}
           onClose={() => setSelectedEvent(null)}
           onJoin={handleJoinEvent}
+          onLeave={handleLeaveEvent}
+          onOpenChat={handleOpenChat}
           isJoined={joinedIds.includes(selectedEvent.id)}
+          isLiked={likedIds.includes(selectedEvent.id)}
+          onToggleLike={handleToggleLike}
           userId={user?.id || 'guest'}
         />
       )}
+
+      {toast && (
+        <button className="toast" onClick={() => setToast(null)}>
+          <span>✓</span> {toast}
+        </button>
+      )}
+
+      {isCityOpen && <div className="app-sheet-overlay" onClick={() => setIsCityOpen(false)}><div className="app-sheet" onClick={(event) => event.stopPropagation()}><div className="app-sheet-head"><h2>Выберите город</h2><button onClick={() => setIsCityOpen(false)}><Icon name="close" size={22} /></button></div>{['Казань', 'Москва', 'Санкт-Петербург'].map((city) => <button className={`city-option ${selectedCity === city ? 'active' : ''}`} key={city} onClick={() => { setSelectedCity(city); setIsCityOpen(false); }}>{city}<span>{selectedCity === city ? '✓' : ''}</span></button>)}</div></div>}
+      {isMenuOpen && <div className="header-menu"><button onClick={() => { setActiveTab('my'); setIsMenuOpen(false); }}><Icon name="user" size={19} />Мои события</button><button onClick={() => { setActiveTab('profile'); setIsMenuOpen(false); }}><Icon name="grid" size={19} />О приложении</button><button onClick={() => setIsMenuOpen(false)}><Icon name="close" size={19} />Закрыть меню</button></div>}
     </div>
   );
 }

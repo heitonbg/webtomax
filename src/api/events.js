@@ -2,7 +2,9 @@ import { MOCK_EVENTS } from '../data/mockEvents';
 
 // Локальный сервер
 const API = 'http://localhost:3001';
-const USE_MOCK = false;
+// The MVP must work when the bot/server is not running locally. Set
+// VITE_USE_MOCK=false only after the production API is available.
+const USE_MOCK = import.meta.env.VITE_USE_MOCK !== 'false';
 
 let localEvents = [...MOCK_EVENTS];
 
@@ -90,4 +92,18 @@ export const checkHealth = async () => {
     console.warn('Health check failed:', e.message);
     return { status: 'error', message: e.message };
   }
+};
+
+export const leaveEvent = async (eventId, userId) => {
+  if (USE_MOCK) {
+    await new Promise((r) => setTimeout(r, 100));
+    localEvents = localEvents.map((e) =>
+      e.id === eventId ? { ...e, participants: Math.max(0, e.participants - 1) } : e
+    );
+    return { success: true };
+  }
+  return apiFetch(`/api/events/${eventId}/leave`, {
+    method: 'POST',
+    body: JSON.stringify({ userId })
+  });
 };
