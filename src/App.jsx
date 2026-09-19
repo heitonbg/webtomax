@@ -10,29 +10,16 @@ import MyEvents from './components/MyEvents';
 import Profile from './components/Profile';
 import Icon from './components/Icon';
 import { EventSkeletonList } from './components/EventSkeleton';
-import CityPickerModal from './components/CityPickerModal';
-import {
-  fetchEvents,
-  createEvent,
-  joinEvent,
-  leaveEvent,
-  deleteEvent
-} from './api/events';
+import { fetchEvents, createEvent, joinEvent, leaveEvent, deleteEvent } from './api/events';
 import { isEventOwner } from './utils/eventOwnership';
 import DeleteEventDialog from './components/DeleteEventDialog';
 import { maxBridge } from './utils/maxBridge';
 import { haversineDistance, formatDistance } from './utils/distance';
 import './App.css';
 
-// Города по умолчанию (пока не выбран через API)
-const DEFAULT_CITY = {
-  name: 'Казань',
-  lat: 55.796,
-  lng: 49.108,
-  country: 'Россия'
-};
-
 function App() {
+  // The prototype opens straight into the product flow. Consent can be added
+  // back when the real MAX identity and privacy flow are connected.
   const [activeTab, setActiveTab] = useState('feed');
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -47,7 +34,7 @@ function App() {
   const [userCoords, setUserCoords] = useState(null);
   const [toast, setToast] = useState(null);
   const [lastCreatedEventId, setLastCreatedEventId] = useState(null);
-  const [selectedCity, setSelectedCity] = useState(DEFAULT_CITY);
+  const [selectedCity, setSelectedCity] = useState('Казань');
   const [isCityOpen, setIsCityOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [pendingDelete, setPendingDelete] = useState(null);
@@ -71,8 +58,8 @@ function App() {
       setEvents((items) => items.filter((item) => item.id !== id));
       setJoinedIds((ids) => ids.filter((item) => item !== id));
       setLikedIds((ids) => ids.filter((item) => item !== id));
-      setSelectedEvent((event) => (event?.id === id ? null : event));
-      setLastCreatedEventId((previous) => (previous === id ? null : previous));
+      setSelectedEvent((event) => event?.id === id ? null : event);
+      setLastCreatedEventId((previous) => previous === id ? null : previous);
       setPendingDelete(null);
       setToast('Событие удалено');
     } catch (error) {
@@ -104,13 +91,9 @@ function App() {
       );
     }
 
+    loadEvents();
     track('feed_opened');
   }, []);
-
-  // Перезагружаем события при смене города
-  useEffect(() => {
-    loadEvents(selectedCity.name);
-  }, [selectedCity.name]);
 
   useEffect(() => {
     if (!toast) return undefined;
@@ -118,10 +101,10 @@ function App() {
     return () => window.clearTimeout(timer);
   }, [toast]);
 
-  const loadEvents = async (cityName) => {
+  const loadEvents = async () => {
     try {
       setLoading(true);
-      const data = await fetchEvents({ city: cityName });
+      const data = await fetchEvents();
       setEvents(data);
     } catch (e) {
       console.error(e);
@@ -132,6 +115,7 @@ function App() {
 
   const filteredEvents = useMemo(() => {
     let result = [...events];
+    result = result.filter((event) => (event.city || 'Казань') === selectedCity);
 
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
@@ -201,7 +185,7 @@ function App() {
     }
 
     return result;
-  }, [events, searchQuery, quickFilter, filters, userCoords]);
+  }, [events, searchQuery, quickFilter, filters, userCoords, selectedCity]);
 
   const handleJoinEvent = async (event) => {
     if (isEventOwner(event, userId) || joinedIds.includes(event.id)) return;
@@ -218,6 +202,8 @@ function App() {
       setSelectedEvent((prev) =>
         prev?.id === event.id ? { ...prev, participants: prev.participants + 1 } : prev
       );
+      track('join_clicked', { eventId: event.id });
+      track('join_success', { eventId: event.id });
       maxBridge.sendData({
         action: 'join_event',
         eventId: event.id,
@@ -243,6 +229,7 @@ function App() {
     setEvents((prev) => [created, ...prev]);
     setLastCreatedEventId(created.id);
     setActiveTab('my');
+    track('event_created', { title: created.title });
     maxBridge.haptic('success');
     maxBridge.sendData({ action: 'create_event', title: created.title });
     setToast(`Событие «${created.title}» создано`);
@@ -253,18 +240,8 @@ function App() {
     try {
       await leaveEvent(event.id, user?.id || 'guest');
       setJoinedIds((prev) => prev.filter((id) => id !== event.id));
-      setEvents((prev) =>
-        prev.map((item) =>
-          item.id === event.id
-            ? { ...item, participants: Math.max(0, item.participants - 1) }
-            : item
-        )
-      );
-      setSelectedEvent((prev) =>
-        prev?.id === event.id
-          ? { ...prev, participants: Math.max(0, prev.participants - 1) }
-          : prev
-      );
+      setEvents((prev) => prev.map((item) => item.id === event.id ? { ...item, participants: Math.max(0, item.participants - 1) } : item));
+      setSelectedEvent((prev) => prev?.id === event.id ? { ...prev, participants: Math.max(0, prev.participants - 1) } : prev);
       setToast(`Вы отменили участие: «${event.title}»`);
     } catch (e) {
       setToast('Не удалось отменить участие. Попробуйте ещё раз.');
@@ -282,6 +259,7 @@ function App() {
   };
 
   const handleOpenChat = (event) => {
+    // MAX group chat creation will be connected here when the bot API is ready.
     track('chat_opened', { eventId: event.id });
     setToast(`Чат «${event.title}» откроется в MAX после подключения бота`);
   };
@@ -296,24 +274,14 @@ function App() {
         {isExploreTab && (
           <>
             <div className="mobile-header">
-              <div className="mobile-title-row">
-                <h1>
-                  События рядом{' '}
-                  <button className="header-location" onClick={() => setIsCityOpen(true)}>
-                    <span className="pin"><Icon name="pin" size={17} filled /></span>
-                    {selectedCity.name}
-                    <span className="chevron"><Icon name="chevronDown" size={14} /></span>
-                  </button>
-                </h1>
-                <button
-                  className={`header-more ${isMenuOpen ? 'active' : ''}`}
-                  onClick={() => setIsMenuOpen((value) => !value)}
-                  aria-label="Меню"
-                >
-                  <Icon name="more" size={24} />
-                </button>
-              </div>
-              {user && <p className="greeting">Больше, чем просто планы</p>}
+              <div className="mobile-title-row"><h1>
+                События рядом <button className="header-location" onClick={() => setIsCityOpen(true)}><span className="pin"><Icon name="pin" size={17} filled /></span>{selectedCity}<span className="chevron"><Icon name="chevronDown" size={14} /></span></button>
+              </h1><button className={`header-more ${isMenuOpen ? 'active' : ''}`} onClick={() => setIsMenuOpen((value) => !value)} aria-label="Меню"><Icon name="more" size={24} /></button></div>
+              {user && (
+                <p className="greeting">
+                  Больше, чем просто планы
+                </p>
+              )}
             </div>
 
             <SearchBar
@@ -337,16 +305,7 @@ function App() {
               </button>
             </div>
 
-            <div
-              className="quick-filters"
-              tabIndex="0"
-              onWheel={(event) => {
-                if (Math.abs(event.deltaY) > Math.abs(event.deltaX)) {
-                  event.preventDefault();
-                  event.currentTarget.scrollLeft += event.deltaY;
-                }
-              }}
-            >
+            <div className="quick-filters" tabIndex="0" onWheel={(event) => { if (Math.abs(event.deltaY) > Math.abs(event.deltaX)) { event.preventDefault(); event.currentTarget.scrollLeft += event.deltaY; } }}>
               {quickFilters.map((f) => (
                 <button
                   key={f}
@@ -394,7 +353,7 @@ function App() {
                   joinedIds={joinedIds}
                   likedIds={likedIds}
                   onToggleLike={handleToggleLike}
-                  city={selectedCity.name}
+                  city={selectedCity}
                 />
               )}
 
@@ -404,7 +363,7 @@ function App() {
                   onCancel={() => setActiveTab('feed')}
                   userId={user?.id || 'guest'}
                   userName={user?.first_name || user?.name}
-                  city={selectedCity.name}
+                  city={selectedCity}
                 />
               )}
 
@@ -429,7 +388,8 @@ function App() {
                   joinedIds={joinedIds}
                   createdCount={
                     events.filter(
-                      (e) => e.organizer && e.organizer.id === (user?.id || 'guest')
+                      (e) =>
+                        e.organizer && e.organizer.id === (user?.id || 'guest')
                     ).length
                   }
                   onLogout={() => setToast('Профиль гостя остаётся активным в MVP')}
@@ -487,15 +447,7 @@ function App() {
         />
       )}
 
-      {pendingDelete && (
-        <DeleteEventDialog
-          event={pendingDelete}
-          busy={deleting}
-          error={deleteError}
-          onCancel={() => setPendingDelete(null)}
-          onConfirm={confirmDelete}
-        />
-      )}
+      {pendingDelete && <DeleteEventDialog event={pendingDelete} busy={deleting} error={deleteError} onCancel={() => setPendingDelete(null)} onConfirm={confirmDelete} />}
 
       {toast && (
         <button className="toast" onClick={() => setToast(null)}>
@@ -503,39 +455,8 @@ function App() {
         </button>
       )}
 
-      <CityPickerModal
-        isOpen={isCityOpen}
-        onClose={() => setIsCityOpen(false)}
-        onSelect={(city) => setSelectedCity(city)}
-        currentCity={selectedCity.name}
-      />
-
-      {isMenuOpen && (
-        <div className="header-menu">
-          <button
-            onClick={() => {
-              setActiveTab('my');
-              setIsMenuOpen(false);
-            }}
-          >
-            <Icon name="user" size={19} />
-            Мои события
-          </button>
-          <button
-            onClick={() => {
-              setActiveTab('profile');
-              setIsMenuOpen(false);
-            }}
-          >
-            <Icon name="grid" size={19} />
-            О приложении
-          </button>
-          <button onClick={() => setIsMenuOpen(false)}>
-            <Icon name="close" size={19} />
-            Закрыть меню
-          </button>
-        </div>
-      )}
+      {isCityOpen && <div className="app-sheet-overlay" onClick={() => setIsCityOpen(false)}><div className="app-sheet" onClick={(event) => event.stopPropagation()}><div className="app-sheet-head"><h2>Выберите город</h2><button onClick={() => setIsCityOpen(false)}><Icon name="close" size={22} /></button></div>{['Казань', 'Москва', 'Санкт-Петербург'].map((city) => <button className={`city-option ${selectedCity === city ? 'active' : ''}`} key={city} onClick={() => { setSelectedCity(city); setIsCityOpen(false); }}>{city}<span>{selectedCity === city ? '✓' : ''}</span></button>)}</div></div>}
+      {isMenuOpen && <div className="header-menu"><button onClick={() => { setActiveTab('my'); setIsMenuOpen(false); }}><Icon name="user" size={19} />Мои события</button><button onClick={() => { setActiveTab('profile'); setIsMenuOpen(false); }}><Icon name="grid" size={19} />О приложении</button><button onClick={() => setIsMenuOpen(false)}><Icon name="close" size={19} />Закрыть меню</button></div>}
     </div>
   );
 }
