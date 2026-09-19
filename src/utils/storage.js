@@ -3,6 +3,7 @@ const KEYS = {
   liked: 'max_events_liked_v1',
   notifications: 'max_events_notifications_v1',
   sort: 'max_events_sort_v1',
+  theme: 'max_events_theme_v1',
 };
 
 const read = (key, fallback) => {
@@ -27,4 +28,6 @@ export const storage = {
   setNotifications: (v) => write(KEYS.notifications, v),
   getSort: () => read(KEYS.sort, 'distance'),
   setSort: (v) => write(KEYS.sort, v),
+  getTheme: () => read(KEYS.theme, 'light'),
+  setTheme: (v) => write(KEYS.theme, v),
 };
