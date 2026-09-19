@@ -2,7 +2,7 @@ import { MOCK_EVENTS } from '../data/mockEvents.js';
 import { isEventOwner } from '../utils/eventOwnership.js';
 
 // Локальный сервер
-const API = 'https://ux9egw-46-180-170-120.ru.tuna.am';
+const API = 'https://qdlosi-46-180-170-120.ru.tuna.am';
 
 // Использовать ли mock-данные, если сервер недоступен
 const USE_MOCK = import.meta.env?.VITE_USE_MOCK === 'true';
