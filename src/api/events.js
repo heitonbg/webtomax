@@ -1,7 +1,7 @@
 import { MOCK_EVENTS } from '../data/mockEvents.js';
 import { isEventOwner } from '../utils/eventOwnership.js';
 
-const API = import.meta.env?.VITE_API_URL || 'https://3s0ufz-46-180-170-120.ru.tuna.am';
+const API = import.meta.env?.VITE_API_URL || 'https://9nvht3-46-180-170-120.ru.tuna.am';
 // Если сервер не запущен — можно поставить VITE_USE_MOCK=true, чтобы работать на моке.
 const USE_MOCK = import.meta.env?.VITE_USE_MOCK === 'true';
 
