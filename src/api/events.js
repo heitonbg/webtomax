@@ -1,11 +1,19 @@
 import { MOCK_EVENTS } from '../data/mockEvents.js';
 import { isEventOwner } from '../utils/eventOwnership.js';
 
+// Адрес бэкенда
+// Для локальной разработки — http://localhost:3001
+// Для прода — замените на адрес туннеля (Tuna/ngrok) или деплоя (Amvera/Railway)
 const API = 'http://localhost:3001';
+
+// Использовать ли mock-данные, если сервер недоступен
 const USE_MOCK = import.meta.env?.VITE_USE_MOCK === 'true';
 
 let localEvents = [...MOCK_EVENTS];
 
+// ============================================
+// Базовый fetch с обработкой ошибок
+// ============================================
 const apiFetch = async (path, options = {}) => {
   const url = `${API}${path}`;
   const res = await fetch(url, {
@@ -21,7 +29,9 @@ const apiFetch = async (path, options = {}) => {
     try {
       const err = await res.json();
       errorMessage = err.error || errorMessage;
-    } catch (e) {}
+    } catch (e) {
+      // ignore
+    }
     throw new Error(errorMessage);
   }
 
@@ -29,12 +39,13 @@ const apiFetch = async (path, options = {}) => {
 };
 
 // ============================================
-// Поиск городов через DaData + Nominatim
+// Поиск городов (DaData + Nominatim)
 // ============================================
 export const searchCities = async (query) => {
   if (!query || query.trim().length < 2) {
     return { cities: [], sources: [] };
   }
+
   try {
     const params = new URLSearchParams({ q: query });
     return await apiFetch(`/api/cities/search?${params}`);
@@ -44,6 +55,9 @@ export const searchCities = async (query) => {
   }
 };
 
+// ============================================
+// Обратное геокодирование (координаты → адрес)
+// ============================================
 export const reverseGeocode = async (lat, lng) => {
   const params = new URLSearchParams({
     lat: String(lat),
@@ -115,7 +129,9 @@ export const leaveEvent = async (eventId, userId) => {
     }
     await new Promise((r) => setTimeout(r, 100));
     localEvents = localEvents.map((e) =>
-      e.id === eventId ? { ...e, participants: Math.max(0, e.participants - 1) } : e
+      e.id === eventId
+        ? { ...e, participants: Math.max(0, e.participants - 1) }
+        : e
     );
     return { success: true };
   }
@@ -161,6 +177,9 @@ export const checkHealth = async () => {
   }
 };
 
+// ============================================
+// Загрузка фотографий на сервер
+// ============================================
 export const uploadPhotos = async (files) => {
   if (!files || !files.length) return [];
 
@@ -180,6 +199,9 @@ export const uploadPhotos = async (files) => {
   return data.urls || [];
 };
 
+// ============================================
+// Полный URL для картинок с сервера
+// ============================================
 export const resolveImageUrl = (path) => {
   if (!path) return '';
   if (path.startsWith('http') || path.startsWith('data:')) return path;
