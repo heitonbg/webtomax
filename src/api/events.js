@@ -1,19 +1,28 @@
 import { MOCK_EVENTS } from '../data/mockEvents.js';
 import { isEventOwner } from '../utils/eventOwnership.js';
 
+// ============================================
+// ★★★ ГЛАВНЫЙ ПЕРЕКЛЮЧАТЕЛЬ ★★★
+// Управляется через .env в корне проекта:
+//   VITE_USE_MOCK=true   → моковые данные (в памяти)
+//   VITE_USE_MOCK=false  → реальный API (сервер + БД)
+// По умолчанию — mock, чтобы фронт работал без сервера.
+// ============================================
+const USE_MOCK = import.meta.env?.VITE_USE_MOCK !== 'false';
 const API = import.meta.env?.VITE_API_URL || 'http://localhost:3001';
-// Если сервер не запущен — можно поставить VITE_USE_MOCK=true, чтобы работать на моке.
-const USE_MOCK = import.meta.env?.VITE_USE_MOCK === 'true';
 
-// ============ МОК (только если VITE_USE_MOCK=true) ============
+// ============ МОКОВЫЕ ДАННЫЕ (в памяти) ============
 let mockEvents = [...MOCK_EVENTS];
-const mockJoins = new Map();
-let mockReviews = [];
+const mockJoins = new Map();   // eventId -> Set(userId)
+let mockReviews = [];          // { id, eventId, userId, userName, rating, text, createdAt }
 
 // ============ API ============
 const apiFetch = async (path, options = {}) => {
   const res = await fetch(`${API}${path}`, {
-    headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(options.headers || {})
+    },
     ...options
   });
   if (!res.ok) {
@@ -24,10 +33,15 @@ const apiFetch = async (path, options = {}) => {
   return res.status === 204 ? { success: true } : res.json();
 };
 
+// ============ EVENTS ============
+
 export const fetchEvents = async (filters = {}) => {
   if (USE_MOCK) {
     await new Promise((r) => setTimeout(r, 150));
-    return mockEvents;
+    return mockEvents.map((e) => ({
+      ...e,
+      participants: Math.max(e.participants || 1, 1 + (mockJoins.get(e.id)?.size || 0))
+    }));
   }
   const params = new URLSearchParams(filters).toString();
   return apiFetch(params ? `/api/events?${params}` : '/api/events');
@@ -88,10 +102,11 @@ export const joinEvent = async (eventId, userId) => {
     if (mockJoins.get(eventId).has(String(userId))) throw new Error('Вы уже участвуете');
     await new Promise((r) => setTimeout(r, 100));
     mockJoins.get(eventId).add(String(userId));
-    mockEvents = mockEvents.map((e) =>
-      e.id === eventId ? { ...e, participants: e.participants + 1 } : e
+    const newParticipants = Math.max(
+      event.participants || 1,
+      1 + mockJoins.get(eventId).size
     );
-    return { success: true, participants: mockEvents.find((e) => e.id === eventId).participants };
+    return { success: true, participants: newParticipants };
   }
   return apiFetch(`/api/events/${eventId}/join`, {
     method: 'POST',
@@ -107,10 +122,8 @@ export const leaveEvent = async (eventId, userId) => {
     if (!mockJoins.get(eventId)?.has(String(userId))) throw new Error('Вы не участвуете');
     await new Promise((r) => setTimeout(r, 100));
     mockJoins.get(eventId).delete(String(userId));
-    mockEvents = mockEvents.map((e) =>
-      e.id === eventId ? { ...e, participants: Math.max(0, e.participants - 1) } : e
-    );
-    return { success: true, participants: mockEvents.find((e) => e.id === eventId).participants };
+    const newParticipants = Math.max(1, 1 + (mockJoins.get(eventId)?.size || 0));
+    return { success: true, participants: newParticipants };
   }
   return apiFetch(`/api/events/${eventId}/leave`, {
     method: 'POST',
