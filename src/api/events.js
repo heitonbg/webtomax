@@ -1,8 +1,11 @@
-import { MOCK_EVENTS } from '../data/mockEvents';
+import { MOCK_EVENTS } from '../data/mockEvents.js';
+import { isEventOwner } from '../utils/eventOwnership.js';
 
 // Локальный сервер
 const API = 'http://localhost:3001';
-const USE_MOCK = false;
+// The MVP must work when the bot/server is not running locally. Set
+// VITE_USE_MOCK=false only after the production API is available.
+const USE_MOCK = import.meta.env?.VITE_USE_MOCK !== 'false';
 
 let localEvents = [...MOCK_EVENTS];
 
@@ -25,7 +28,7 @@ const apiFetch = async (path, options = {}) => {
     throw new Error(errorMessage);
   }
 
-  return res.json();
+  return res.status === 204 ? { success: true } : res.json();
 };
 
 export const fetchEvents = async (filters = {}) => {
@@ -60,6 +63,7 @@ export const createEvent = async (eventData) => {
 
 export const joinEvent = async (eventId, userId) => {
   if (USE_MOCK) {
+    if (isEventOwner(localEvents.find((e) => e.id === eventId), userId)) throw new Error('Организатор не может записаться на своё событие');
     await new Promise((r) => setTimeout(r, 100));
     localEvents = localEvents.map((e) =>
       e.id === eventId ? { ...e, participants: e.participants + 1 } : e
@@ -90,4 +94,31 @@ export const checkHealth = async () => {
     console.warn('Health check failed:', e.message);
     return { status: 'error', message: e.message };
   }
+};
+
+export const leaveEvent = async (eventId, userId) => {
+  if (USE_MOCK) {
+    if (isEventOwner(localEvents.find((e) => e.id === eventId), userId)) throw new Error('Организатор не может отказаться от своего события');
+    await new Promise((r) => setTimeout(r, 100));
+    localEvents = localEvents.map((e) =>
+      e.id === eventId ? { ...e, participants: Math.max(0, e.participants - 1) } : e
+    );
+    return { success: true };
+  }
+  return apiFetch(`/api/events/${eventId}/leave`, {
+    method: 'POST',
+    body: JSON.stringify({ userId })
+  });
+};
+
+export const deleteEvent = async (eventId, userId) => {
+  if (USE_MOCK) {
+    const event = localEvents.find((e) => e.id === eventId);
+    if (!event) throw new Error('Событие уже удалено');
+    if (!isEventOwner(event, userId)) throw new Error('Удалить событие может только организатор');
+    localEvents = localEvents.filter((e) => e.id !== eventId);
+    return { success: true };
+  }
+  // The production API must authorize the authenticated organizer server-side.
+  return apiFetch(`/api/events/${eventId}`, { method: 'DELETE', body: JSON.stringify({ userId }) });
 };

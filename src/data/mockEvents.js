@@ -11,11 +11,18 @@ export const MOCK_EVENTS = [
     rating: 4.8,
     reviewsCount: 24,
     image: 'https://images.unsplash.com/photo-1610890716171-6b1bb98ffd09?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1610890716171-6b1bb98ffd09?auto=format&fit=crop&w=900&q=80',
+      'https://images.unsplash.com/photo-1606503153255-59d8b8b3386f?auto=format&fit=crop&w=900&q=80',
+      'https://images.unsplash.com/photo-1632501641765-e568d28b0015?auto=format&fit=crop&w=900&q=80',
+      'https://images.unsplash.com/photo-1585504198199-20277593b94f?auto=format&fit=crop&w=900&q=80',
+      'https://images.unsplash.com/photo-1575361204480-aadea25e6e68?auto=format&fit=crop&w=900&q=80'
+    ],
     lat: 55.796, lng: 49.108,
     district: 'Вахитовский район',
     address: 'ул. Бурхана Шахиди, 7',
     description: 'Новые люди, любимые игры и уютная атмосфера ✨',
-    organizer: { id: 101, name: 'Центр «Смена»', avatar: '🎭' }
+    organizer: { id: 101, name: 'Центр «Смена»' }
   },
   {
     id: 2,
@@ -32,8 +39,8 @@ export const MOCK_EVENTS = [
     lat: 55.790, lng: 49.120,
     district: 'Вахитовский район',
     address: 'Набережная озера Кабан',
-    description: '5 км в приятной компании. Темп — для всех! 🏃‍♂️',
-    organizer: { id: 102, name: 'Run Kazan', avatar: '🏃' }
+    description: '5 км в приятной компании. Темп — для всех.',
+    organizer: { id: 102, name: 'Run Kazan' }
   },
   {
     id: 3,
@@ -51,7 +58,7 @@ export const MOCK_EVENTS = [
     district: 'Вахитовский район',
     address: 'ул. Кремлевская, 2',
     description: 'Погружаемся в историю Казани вместе с гидом',
-    organizer: { id: 103, name: 'Музей РТ', avatar: '🏛️' }
+    organizer: { id: 103, name: 'Музей РТ' }
   },
   {
     id: 4,
@@ -69,7 +76,7 @@ export const MOCK_EVENTS = [
     district: 'Вахитовский район',
     address: 'парк Чёрное озеро',
     description: 'Показываем «Движение вверх» в парке «Чёрное озеро»',
-    organizer: { id: 104, name: 'Kazan Cinema', avatar: '🎬' }
+    organizer: { id: 104, name: 'Kazan Cinema' }
   },
   {
     id: 5,
@@ -87,7 +94,7 @@ export const MOCK_EVENTS = [
     district: 'Советский район',
     address: 'Спортплощадка в парке Горького',
     description: 'Играем любительский футбол, весёлая компания, темп средний',
-    organizer: { id: 105, name: 'Алексей М.', avatar: '⚽' }
+    organizer: { id: 105, name: 'Алексей М.' }
   },
   {
     id: 6,
@@ -104,7 +111,86 @@ export const MOCK_EVENTS = [
     lat: null, lng: null,
     district: 'Онлайн',
     address: 'Онлайн (ссылка будет после регистрации)',
-    description: 'Угадываем фильмы 90-х, играем командой онлайн 🎬',
-    organizer: { id: 106, name: 'QuizHub', avatar: '🎯' }
+    description: 'Угадываем фильмы 90-х, играем командой онлайн.',
+    organizer: { id: 106, name: 'QuizHub' }
+  },
+  {
+    id: 7,
+    title: 'Прогулка и кофе в Старо-Татарской слободе',
+    category: 'Прогулка',
+    price: 'Бесплатно',
+    date: 'Завтра, 12:00',
+    distance: '1.1 км',
+    participants: 6,
+    maxParticipants: 12,
+    rating: 4.9,
+    reviewsCount: 8,
+    image: 'https://images.unsplash.com/photo-1528136093623-3a4499f1295c?auto=format&fit=crop&w=800&q=80',
+    lat: 55.778, lng: 49.117,
+    district: 'Старо-Татарская слобода',
+    address: 'ул. Каюма Насыри, 25',
+    description: 'Неспешно пройдёмся по красивым местам и заглянем за кофе.',
+    organizer: { id: 107, name: 'Лена' }
+  },
+  {
+    id: 8,
+    title: 'Джазовый джем в баре',
+    category: 'Музыка',
+    price: 'Платно',
+    date: 'Завтра, 20:00',
+    distance: '2.4 км',
+    participants: 14,
+    maxParticipants: 30,
+    rating: 4.7,
+    reviewsCount: 17,
+    image: 'https://images.unsplash.com/photo-1511192336575-5a79af67a629?auto=format&fit=crop&w=800&q=80',
+    lat: 55.803, lng: 49.086,
+    district: 'Московский район',
+    address: 'ул. Декабристов, 85',
+    description: 'Слушаем живую музыку, знакомимся и остаёмся на джем.',
+    organizer: { id: 108, name: 'Jazz Lab' }
+  },
+  {
+    id: 9,
+    title: 'Открытая тренировка по йоге',
+    category: 'Спорт',
+    price: 'Бесплатно',
+    date: 'Завтра, 09:30',
+    distance: '3.6 км',
+    participants: 9,
+    maxParticipants: 18,
+    rating: 4.9,
+    reviewsCount: 12,
+    image: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=800&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=900&q=80',
+      'https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=900&q=80',
+      'https://images.unsplash.com/photo-1599447421416-3414500d18a5?auto=format&fit=crop&w=900&q=80',
+      'https://images.unsplash.com/photo-1562088287-bde35a1ea917?auto=format&fit=crop&w=900&q=80',
+      'https://images.unsplash.com/photo-1575052814086-f385e2e2ad1b?auto=format&fit=crop&w=900&q=80'
+    ],
+    lat: 55.82, lng: 49.12,
+    district: 'Советский район',
+    address: 'Горкинско-Ометьевский лес',
+    description: 'Берите коврик — занятие подойдёт даже для первого раза.',
+    organizer: { id: 109, name: 'Тёплая йога' }
+  },
+  {
+    id: 10,
+    title: 'Лекция «Казань в кино»',
+    category: 'Культура',
+    price: 'Пушкинская карта',
+    date: 'Завтра, 18:00',
+    distance: '4.2 км',
+    participants: 31,
+    maxParticipants: 80,
+    rating: 4.8,
+    reviewsCount: 36,
+    image: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=800&q=80',
+    lat: 55.79, lng: 49.097,
+    district: 'Вахитовский район',
+    address: 'Национальная библиотека РТ',
+    description: 'Разбираем любимые фильмы и городские локации на большом экране.',
+    organizer: { id: 110, name: 'Нацбиблиотека РТ' }
   }
 ];

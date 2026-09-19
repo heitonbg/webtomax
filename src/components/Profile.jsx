@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { maxBridge } from '../utils/maxBridge';
+import Icon from './Icon';
 
 const Profile = ({ user, joinedIds, createdCount, onLogout }) => {
   const [showAbout, setShowAbout] = useState(false);
@@ -55,7 +56,7 @@ const Profile = ({ user, joinedIds, createdCount, onLogout }) => {
         <h4>Настройки</h4>
 
         <div className="settings-row">
-          <span>🔔 Уведомления о событиях</span>
+          <span><Icon name="calendar" size={19} /> Уведомления о событиях</span>
           <label className="switch">
             <input type="checkbox" defaultChecked />
             <span className="slider"></span>
@@ -63,7 +64,7 @@ const Profile = ({ user, joinedIds, createdCount, onLogout }) => {
         </div>
 
         <div className="settings-row">
-          <span>📍 Показывать мой район</span>
+          <span><Icon name="pin" size={19} /> Показывать мой район</span>
           <label className="switch">
             <input type="checkbox" defaultChecked />
             <span className="slider"></span>
@@ -71,7 +72,7 @@ const Profile = ({ user, joinedIds, createdCount, onLogout }) => {
         </div>
 
         <div className="settings-row">
-          <span>🌙 Тёмная тема</span>
+          <span><Icon name="grid" size={19} /> Тёмная тема</span>
           <label className="switch">
             <input type="checkbox" />
             <span className="slider"></span>
@@ -86,7 +87,7 @@ const Profile = ({ user, joinedIds, createdCount, onLogout }) => {
           className="settings-row-button"
           onClick={() => setShowAbout(!showAbout)}
         >
-          <span>ℹ️ MAX Events</span>
+          <span>О MAX Events</span>
           <span>{showAbout ? '▼' : '▶'}</span>
         </button>
 
@@ -107,11 +108,11 @@ const Profile = ({ user, joinedIds, createdCount, onLogout }) => {
       {/* Юридическая информация */}
       <div className="profile-section">
         <button className="settings-row-button">
-          <span>📄 Политика конфиденциальности</span>
+          <span>Политика конфиденциальности</span>
           <span>▶</span>
         </button>
         <button className="settings-row-button">
-          <span>📜 Пользовательское соглашение</span>
+          <span>Пользовательское соглашение</span>
           <span>▶</span>
         </button>
       </div>
