@@ -6,6 +6,7 @@ const USE_MOCK = import.meta.env?.VITE_USE_MOCK !== 'false';
 
 let localEvents = [...MOCK_EVENTS];
 const localJoins = new Map(); // eventId -> Set(userId)
+let localReviews = []; // { id, eventId, userId, userName, rating, text, createdAt }
 
 const apiFetch = async (path, options = {}) => {
   const res = await fetch(`${API}${path}`, {
@@ -167,4 +168,29 @@ export const uploadImages = async (files) => {
 export const checkHealth = async () => {
   try { return await apiFetch('/health'); }
   catch (e) { return { status: 'error', message: e.message }; }
+};
+
+// ============ REVIEWS ============
+
+export const fetchReviews = async (eventId) => {
+  if (USE_MOCK) {
+    return localReviews.filter((r) => r.eventId === eventId);
+  }
+  return apiFetch(`/api/events/${eventId}/reviews`);
+};
+
+export const addReview = async (review) => {
+  if (USE_MOCK) {
+    const existing = localReviews.find(
+      (r) => r.eventId === review.eventId && String(r.userId) === String(review.userId)
+    );
+    if (existing) throw new Error('Вы уже оставили отзыв');
+    const newReview = { ...review, id: Date.now(), createdAt: new Date().toISOString() };
+    localReviews = [newReview, ...localReviews];
+    return newReview;
+  }
+  return apiFetch(`/api/events/${review.eventId}/reviews`, {
+    method: 'POST',
+    body: JSON.stringify(review)
+  });
 };
