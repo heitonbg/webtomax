@@ -143,7 +143,6 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Загрузка отзывов при открытии события
   useEffect(() => {
     if (!selectedEvent) return;
     const id = selectedEvent.id;
