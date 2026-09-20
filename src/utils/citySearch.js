@@ -3,6 +3,23 @@ import RAW_CITIES from '../data/russianCities.json';
 import { getRegionName } from '../data/ruRegions';
 
 // ============================================
+// ИСПРАВЛЕНИЯ ИСТОРИЧЕСКИХ НАЗВАНИЙ
+// ============================================
+const NAME_FIXES = {
+  'Муско': 'Москва',
+  'Питер': 'Санкт-Петербург',
+  'Казан': 'Казань',
+  'Сталинск': 'Новокузнецк',
+  'Свердловск': 'Екатеринбург',
+  'Горький': 'Нижний Новгород',
+  'Челепи': 'Челябинск',
+  'Куйбышев': 'Самара',
+  'Брежнев': 'Набережные Челны',
+  'Владик': 'Владивосток',
+  'Анжи': 'Махачкала',
+};
+
+// ============================================
 // НОРМАЛИЗАЦИЯ
 // ============================================
 const normalize = (str) =>
@@ -11,20 +28,20 @@ const normalize = (str) =>
     .replace(/ё/g, 'е')
     .replace(/[^a-zа-я0-9]/g, '');
 
-// Обогащаем города сразу — добавляем regionName
+// Обогащаем города — правим названия и добавляем regionName
 const CITIES = RAW_CITIES.map((c) => ({
   ...c,
+  name: NAME_FIXES[c.name] || c.name,
   regionName: getRegionName(c.region),
 }));
 
 // ============================================
 // ИНДЕКСЫ
 // ============================================
-const byFirstLetter = new Map();   // 'к' → [...]
-const byPrefix2 = new Map();       // 'ка' → [...]
-const byExactName = new Map();     // 'казань' → [...]
+const byFirstLetter = new Map();
+const byPrefix2 = new Map();
+const byExactName = new Map();
 
-// Топ-60 городов по населению — для пустого запроса
 const TOP_CITIES = [...CITIES]
   .sort((a, b) => (b.population || 0) - (a.population || 0))
   .slice(0, 60);
@@ -56,12 +73,9 @@ export function searchCities(query, limit = 50) {
   const q = normalize(query);
   if (!q) return TOP_CITIES.slice(0, limit);
 
-  let pool;
-  if (q.length === 1) {
-    pool = byFirstLetter.get(q[0]) || [];
-  } else {
-    pool = byPrefix2.get(q.slice(0, 2)) || [];
-  }
+  const pool = q.length === 1
+    ? (byFirstLetter.get(q[0]) || [])
+    : (byPrefix2.get(q.slice(0, 2)) || []);
 
   const results = [];
 
@@ -102,7 +116,52 @@ export function getAllCities() {
   return CITIES;
 }
 
-// Для отладки
 export function getCityCount() {
   return CITIES.length;
+}
+
+// ============================================
+// ★★★ БЛИЖАЙШИЙ ГОРОД К ТОЧКЕ ★★★
+// ============================================
+function haversine(lat1, lng1, lat2, lng2) {
+  const R = 6371;
+  const toRad = (x) => (x * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+/**
+ * Найти ближайший город к точке.
+ * @param {number} lat
+ * @param {number} lng
+ * @param {number} maxDistanceKm — если ближе этого нет, вернёт null
+ * @returns {{ city: object, distance: number } | null}
+ */
+export function findNearestCity(lat, lng, maxDistanceKm = 150) {
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+
+  let best = null;
+  let bestDist = Infinity;
+
+  for (const city of CITIES) {
+    if (!Number.isFinite(city.lat) || !Number.isFinite(city.lng)) continue;
+
+    // Быстрый отсев по bounding box (≈1° ≈ 111 км)
+    const dLat = Math.abs(city.lat - lat);
+    const dLng = Math.abs(city.lng - lng);
+    if (dLat > 2 || dLng > 3) continue;
+
+    const dist = haversine(city.lat, city.lng, lat, lng);
+    if (dist < bestDist) {
+      bestDist = dist;
+      best = city;
+    }
+  }
+
+  if (!best || bestDist > maxDistanceKm) return null;
+  return { city: best, distance: bestDist };
 }
