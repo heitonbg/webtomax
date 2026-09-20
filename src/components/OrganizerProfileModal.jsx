@@ -11,13 +11,11 @@ const OrganizerProfileModal = ({ organizer, events = [], onClose, onEventClick }
     .join('')
     .toUpperCase();
 
-  // Считаем агрегированный рейтинг по событиям организатора
   const ratedEvents = events.filter((e) => (e.rating || 0) > 0);
   const avgRating = ratedEvents.length
     ? (ratedEvents.reduce((sum, e) => sum + (e.rating || 0), 0) / ratedEvents.length).toFixed(1)
     : '0.0';
 
-  // Общее число участников на его событиях
   const totalParticipants = events.reduce((sum, e) => sum + (e.participants || 0), 0);
 
   return (
@@ -73,6 +71,11 @@ const OrganizerProfileModal = ({ organizer, events = [], onClose, onEventClick }
                     <strong>{event.title}</strong>
                     <small>{event.date}</small>
                     <small className="organizer-event-meta">
+                      {event.duration && (
+                        <>
+                          <Icon name="clock" size={13} /> {event.duration} ·{' '}
+                        </>
+                      )}
                       <Icon name="people" size={13} /> {event.participants} · {event.distance}
                     </small>
                   </span>
