@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview --host"
+    "preview": "vite preview --host",
+    "server": "npm --prefix server run start",
+    "server:dev": "npm --prefix server run dev"
   },
   "dependencies": {
     "leaflet": "^1.9.4",
